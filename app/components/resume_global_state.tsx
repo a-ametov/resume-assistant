@@ -15,6 +15,7 @@ import type {
   PositionState,
   ProfileState,
   SerializedPositionState,
+  TextEntryState,
 } from "../state/resume_position_state";
 import {
   deserializePositionState,
@@ -30,8 +31,20 @@ type ResumeGlobalStateValue = {
   setPositionTitle: (value: string) => void;
   positionResponsibilities: string;
   setPositionResponsibilities: (value: string) => void;
-  summary: string[];
-  setSummaryEntries: (entries: string[]) => void;
+  summaryEntries: TextEntryState[];
+  registerSummaryEntry: (entryId: number) => void;
+  updateSummaryEntry: (
+    entryId: number,
+    patch: Partial<Omit<TextEntryState, "entryId">>,
+  ) => void;
+  setSummaryEntryHidden: (entryId: number, hidden: boolean) => void;
+  skillsEntries: TextEntryState[];
+  registerSkillEntry: (entryId: number) => void;
+  updateSkillEntry: (
+    entryId: number,
+    patch: Partial<Omit<TextEntryState, "entryId">>,
+  ) => void;
+  setSkillEntryHidden: (entryId: number, hidden: boolean) => void;
   profile: ProfileState;
   setProfile: (value: ProfileState) => void;
   isProfileVisible: boolean;
@@ -100,6 +113,12 @@ const createDefaultEducationEntry = (educationId: number): EducationEntryState =
   hidden: false,
 });
 
+const createDefaultTextEntry = (entryId: number): TextEntryState => ({
+  entryId,
+  text: "",
+  hidden: false,
+});
+
 export function ResumeGlobalStateProvider({
   children,
 }: {
@@ -108,7 +127,8 @@ export function ResumeGlobalStateProvider({
   const [company, setCompany] = useState("");
   const [positionTitle, setPositionTitle] = useState("");
   const [positionResponsibilities, setPositionResponsibilities] = useState("");
-  const [summary, setSummaryEntries] = useState<string[]>([]);
+  const [summaryEntries, setSummaryEntries] = useState<TextEntryState[]>([]);
+  const [skillsEntries, setSkillsEntries] = useState<TextEntryState[]>([]);
   const [educationEntries, setEducationEntries] = useState<EducationEntryState[]>([]);
   const [companyEntries, setCompanyEntries] = useState<CompanyEntryState[]>([]);
   const [profile, setProfile] = useState<ProfileState>({
@@ -133,7 +153,8 @@ export function ResumeGlobalStateProvider({
       setCompany(nextState.company);
       setPositionTitle(nextState.positionTitle);
       setPositionResponsibilities(nextState.positionResponsibilities);
-      setSummaryEntries(nextState.summary);
+      setSummaryEntries(nextState.summaryEntries);
+      setSkillsEntries(nextState.skillsEntries);
       setEducationEntries(nextState.educationEntries);
       setCompanyEntries(nextState.companyEntries);
       setProfile(nextState.profile);
@@ -296,6 +317,90 @@ export function ResumeGlobalStateProvider({
     updateExperienceEntry(companyId, entryId, { hidden });
   }, [updateExperienceEntry]);
 
+  const registerSummaryEntry = useCallback((entryId: number) => {
+    setSummaryEntries((prev) => {
+      if (prev.some((entry) => entry.entryId === entryId)) {
+        return prev;
+      }
+
+      return [...prev, createDefaultTextEntry(entryId)];
+    });
+  }, []);
+
+  const updateSummaryEntry = useCallback((
+    entryId: number,
+    patch: Partial<Omit<TextEntryState, "entryId">>,
+  ) => {
+    setSummaryEntries((prev) => {
+      const existing = prev.find((entry) => entry.entryId === entryId);
+
+      if (!existing) {
+        return [
+          ...prev,
+          {
+            ...createDefaultTextEntry(entryId),
+            ...patch,
+          },
+        ];
+      }
+
+      return prev.map((entry) =>
+        entry.entryId === entryId
+          ? {
+              ...entry,
+              ...patch,
+            }
+          : entry,
+      );
+    });
+  }, []);
+
+  const setSummaryEntryHidden = useCallback((entryId: number, hidden: boolean) => {
+    updateSummaryEntry(entryId, { hidden });
+  }, [updateSummaryEntry]);
+
+  const registerSkillEntry = useCallback((entryId: number) => {
+    setSkillsEntries((prev) => {
+      if (prev.some((entry) => entry.entryId === entryId)) {
+        return prev;
+      }
+
+      return [...prev, createDefaultTextEntry(entryId)];
+    });
+  }, []);
+
+  const updateSkillEntry = useCallback((
+    entryId: number,
+    patch: Partial<Omit<TextEntryState, "entryId">>,
+  ) => {
+    setSkillsEntries((prev) => {
+      const existing = prev.find((entry) => entry.entryId === entryId);
+
+      if (!existing) {
+        return [
+          ...prev,
+          {
+            ...createDefaultTextEntry(entryId),
+            ...patch,
+          },
+        ];
+      }
+
+      return prev.map((entry) =>
+        entry.entryId === entryId
+          ? {
+              ...entry,
+              ...patch,
+            }
+          : entry,
+      );
+    });
+  }, []);
+
+  const setSkillEntryHidden = useCallback((entryId: number, hidden: boolean) => {
+    updateSkillEntry(entryId, { hidden });
+  }, [updateSkillEntry]);
+
   const toggleProfileVisible = useCallback(() => {
     setIsProfileVisible((prev) => !prev);
   }, []);
@@ -305,12 +410,13 @@ export function ResumeGlobalStateProvider({
       company,
       positionTitle,
       positionResponsibilities,
-      summary,
+      summaryEntries,
+      skillsEntries,
       educationEntries,
       companyEntries,
       profile,
     }),
-    [company, positionTitle, positionResponsibilities, summary, educationEntries, companyEntries, profile],
+    [company, positionTitle, positionResponsibilities, summaryEntries, skillsEntries, educationEntries, companyEntries, profile],
   );
 
   useEffect(() => {
@@ -318,12 +424,13 @@ export function ResumeGlobalStateProvider({
       company,
       positionTitle,
       positionResponsibilities,
-      summary,
+      summaryEntries,
+      skillsEntries,
       educationEntries,
       companyEntries,
       profile,
     });
-  }, [company, positionTitle, positionResponsibilities, summary, educationEntries, companyEntries, profile]);
+  }, [company, positionTitle, positionResponsibilities, summaryEntries, skillsEntries, educationEntries, companyEntries, profile]);
 
   const value: ResumeGlobalStateValue = useMemo(
     () => ({
@@ -333,8 +440,14 @@ export function ResumeGlobalStateProvider({
       setPositionTitle,
       positionResponsibilities,
       setPositionResponsibilities,
-      summary,
-      setSummaryEntries,
+      summaryEntries,
+      registerSummaryEntry,
+      updateSummaryEntry,
+      setSummaryEntryHidden,
+      skillsEntries,
+      registerSkillEntry,
+      updateSkillEntry,
+      setSkillEntryHidden,
       profile,
       setProfile,
       isProfileVisible,
@@ -355,8 +468,8 @@ export function ResumeGlobalStateProvider({
       company,
       positionTitle,
       positionResponsibilities,
-      summary,
-      companyEntries,
+      summaryEntries,
+      skillsEntries,
       profile,
       isProfileVisible,
       loadStateRevision,
@@ -369,7 +482,14 @@ export function ResumeGlobalStateProvider({
       registerExperienceEntry,
       updateExperienceEntry,
       setExperienceHidden,
+      registerSummaryEntry,
+      updateSummaryEntry,
+      setSummaryEntryHidden,
+      registerSkillEntry,
+      updateSkillEntry,
+      setSkillEntryHidden,
       toggleProfileVisible,
+      positionState,
     ],
   );
 

@@ -3,6 +3,7 @@ import EducationEntries from "./components/education_entries";
 import AppHeader from "./components/app_header";
 import Profile from "./components/profile";
 import PositionContext from "./components/position_context";
+import Skills from "./components/skills";
 import Summary from "./components/summary";
 
 export default function Home() {
@@ -12,6 +13,7 @@ export default function Home() {
       <Profile />
       <PositionContext />
       <Summary />
+      <Skills />
       <CompanyEntries />
       <EducationEntries />
     </main>

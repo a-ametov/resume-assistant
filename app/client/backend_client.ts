@@ -1,5 +1,14 @@
 import { getPositionState } from "../state/resume_position_state";
-import type { CheckRequest, ChangeRequest, CheckResult, ChangeResult, ExportRequest, ExportPdfResult } from "../shared/types";
+import type {
+  CheckRequest,
+  ChangeRequest,
+  CheckResult,
+  ChangeResult,
+  SkillsRequest,
+  SkillsResult,
+  ExportRequest,
+  ExportPdfResult,
+} from "../shared/types";
 
 export default class BackendClient {
   private static instance: BackendClient;
@@ -7,6 +16,7 @@ export default class BackendClient {
   private readonly experienceChangeEndpoint: string;
   private readonly summaryCheckEndpoint: string;
   private readonly summaryChangeEndpoint: string;
+  private readonly skillsEndpoint: string;
   private readonly exportEndpoint: string;
 
   private constructor() {
@@ -14,6 +24,7 @@ export default class BackendClient {
     this.experienceChangeEndpoint = "/api/experience/change";
     this.summaryCheckEndpoint = "/api/summary/check";
     this.summaryChangeEndpoint = "/api/summary/change";
+    this.skillsEndpoint = "/api/skills";
     this.exportEndpoint = "/api/export";
   }
 
@@ -44,10 +55,11 @@ export default class BackendClient {
     const previousCompanyPositionTitle = targetCompanyEntry?.positionTitle.trim() ?? "";
 
     const previousCompanyExperiencesContext = isSummary
-      ? state.summary
-          .map((summaryText, index) => ({
-            entryId: index + 1,
-            text: summaryText.trim(),
+      ? state.summaryEntries
+          .filter((summaryEntry) => !summaryEntry.hidden)
+          .map((summaryEntry) => ({
+            entryId: summaryEntry.entryId,
+            text: summaryEntry.text.trim(),
           }))
           .filter(
             (summaryEntry) =>
@@ -121,8 +133,13 @@ export default class BackendClient {
         linkedin: state.profile.linkedIn,
         phone: state.profile.phone,
       },
-      summary: state.summary
-        .map((entry) => entry.trim())
+      summary: state.summaryEntries
+        .filter((entry) => !entry.hidden)
+        .map((entry) => entry.text.trim())
+        .filter((entry) => entry.length > 0),
+      skills: state.skillsEntries
+        .filter((entry) => !entry.hidden)
+        .map((entry) => entry.text.trim())
         .filter((entry) => entry.length > 0),
       companyEntries: state.companyEntries
         .filter((company) => !company.hidden)
@@ -147,6 +164,33 @@ export default class BackendClient {
     };
   }
 
+  private buildSkillsRequest(listedSkillsOverride?: string[]): SkillsRequest {
+    const state = getPositionState();
+    const listedSkills =
+      listedSkillsOverride ??
+      state.skillsEntries
+        .filter((skill) => !skill.hidden)
+        .map((skill) => skill.text.trim())
+        .filter((skill) => skill.length > 0);
+
+    return {
+      targetCompany: state.company.trim(),
+      targetCompanyPositionTitle: state.positionTitle.trim(),
+      targetCompanyPositionResponsibilities: state.positionResponsibilities.trim(),
+      listedSkills,
+      previousExperience: state.companyEntries
+        .filter((company) => !company.hidden)
+        .map((company) => ({
+          companyName: company.companyName.trim(),
+          experience: company.experiences
+            .filter((experience) => !experience.hidden)
+            .map((experience) => experience.text.trim())
+            .filter((text) => text.length > 0),
+        }))
+        .filter((company) => company.companyName.length > 0 || company.experience.length > 0),
+    };
+  }
+
   public async exportPdf(): Promise<ExportPdfResult> {
     const requestBody = this.buildExportRequest();
     const response = await fetch(this.exportEndpoint, {
@@ -168,6 +212,37 @@ export default class BackendClient {
       bytes: await response.arrayBuffer(),
       fileName: this.getExportFileName(response),
       contentType: response.headers.get("content-type") || "application/pdf",
+    };
+  }
+
+  public async skills(listedSkillsOverride?: string[]): Promise<SkillsResult> {
+    const requestBody = this.buildSkillsRequest(listedSkillsOverride);
+
+    const response = await fetch(this.skillsEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Backend skills failed: ${response.status} ${errorText}`);
+    }
+
+    const parsed = (await response.json()) as Partial<SkillsResult>;
+    const safeRating = Math.min(10, Math.max(0, Number(parsed.rating ?? 0)));
+
+    return {
+      rating: Number.isFinite(safeRating) ? safeRating : 0,
+      suggestedSkills: Array.isArray(parsed.suggestedSkills)
+        ? parsed.suggestedSkills.map((skill) => String(skill).trim()).filter((skill) => skill.length > 0)
+        : [],
+      irrelevantSkills: Array.isArray(parsed.irrelevantSkills)
+        ? parsed.irrelevantSkills.map((skill) => String(skill).trim()).filter((skill) => skill.length > 0)
+        : [],
+      reasoning: String(parsed.reasoning ?? "").trim(),
     };
   }
 

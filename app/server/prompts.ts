@@ -1,4 +1,4 @@
-import type { ChangeRequest, CheckRequest } from "../shared/types";
+import type { ChangeRequest, CheckRequest, SkillsRequest } from "../shared/types";
 
 const experienceBase = [
 	"You are evaluating a resume entry on a job application.",
@@ -110,6 +110,34 @@ const changeExperienceTemplate = [
 	changeBase,
 ].join("\n");
 
+const skillsTemplate = [
+	"You are evaluating candidate skills on a job application.",
+	"The candidate is applying for a position at {{targetCompany}}",
+	"The role they are targeting is {{targetCompanyPositionTitle}}",
+	"The responsibilities of the role are listed as: {{targetCompanyPositionResponsibilities}}",
+	"",
+	"This is the candidate's previous work experience and responsibilities,",
+	"In the format of <Company>:",
+	"\t* <Experience Entry>",
+	"",
+	"{{previousExperience}}",
+	"",
+	"Skills the candidate has already listed:",
+	"{{listedSkills}}",
+	"",
+	"Task:",
+	"- Grade the current list of skills on a scale from 0 to 10.",
+	"- Suggest a more comprehensive list of skills that fit the job description and company,",
+	"while being relevant to the candidate's experience.",
+	"- Include skills that the candidate has already listed if they are relevant.",
+	"- Also provide a list of skills that the user provided that are not relevant and should be removed.",
+	"- Provide a brief reasoning for the suggestions and removals.",
+	"",
+	"- Skills should be concise, one or two words.",
+	"Return ONLY valid JSON with this exact shape:",
+	"{'rating': <number 0-10>, 'suggestedSkills': [<list of suggested skills>], 'irrelevantSkills': [<list of irrelevant skills>], 'reasoning': '<brief reasoning>'}'",
+].join("\n");
+
 export function createCheckExperiencePrompt(req: CheckRequest): string {
 	return fillTemplate(checkExperienceTemplate, req);
 }
@@ -138,3 +166,12 @@ export function createChangeSummaryPrompt(req: ChangeRequest): string {
 	});
 }
 
+export function createSkillsPrompt(req: SkillsRequest): string {
+	return fillTemplate(skillsTemplate, {
+		...req,
+		listedSkills: req.listedSkills.join("\n"),
+		previousExperience: req.previousExperience
+			.map((experience) => `${experience.companyName}:\n\t* ${experience.experience.join("\n\t* ")}`)
+			.join("\n\n"),
+	});
+}

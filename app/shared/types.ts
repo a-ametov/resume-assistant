@@ -30,6 +30,26 @@ export type ChangeRequest = CheckRequest & {
   oldRewriteRating: number;
 };
 
+export type ConciseCompanyEntry = {
+  companyName: string;
+  experience: string[];
+}
+
+export type SkillsRequest = {
+  targetCompany: string;
+  targetCompanyPositionTitle: string;
+  targetCompanyPositionResponsibilities: string;
+  listedSkills: string[];
+  previousExperience: ConciseCompanyEntry[];
+};
+
+export type SkillsResult = {
+  rating: number;
+  suggestedSkills: string[];
+  irrelevantSkills: string[];
+  reasoning: string;
+};
+
 export type ExportProfile = {
   name: string;
   email: string;
@@ -56,6 +76,7 @@ export type ExportEducationEntry = {
 export type ExportRequest = {
   profile: ExportProfile;
   summary: string[];
+  skills: string[];
   companyEntries: ExportCompanyEntry[];
   education: ExportEducationEntry[];
 };

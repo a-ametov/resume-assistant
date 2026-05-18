@@ -9,10 +9,17 @@ export type PositionState = {
   company: string;
   positionTitle: string;
   positionResponsibilities: string;
-  summary: string[];
+  summaryEntries: TextEntryState[];
+  skillsEntries: TextEntryState[];
   companyEntries: CompanyEntryState[];
   educationEntries: EducationEntryState[];
   profile: ProfileState;
+};
+
+export type TextEntryState = {
+  entryId: number;
+  text: string;
+  hidden: boolean;
 };
 
 export type ExperienceEntryState = {
@@ -52,7 +59,8 @@ let currentPositionState: PositionState = {
   company: "",
   positionTitle: "",
   positionResponsibilities: "",
-  summary: [],
+  summaryEntries: [],
+  skillsEntries: [],
   companyEntries: [],
   educationEntries: [],
   profile: {
@@ -99,6 +107,7 @@ export type SerializedPositionState = {
   positionTitle?: string;
   positionResponsibilities?: string;
   summary?: string[];
+  skills?: string[];
   companyEntries?: SerializedCompanyEntryState[];
   educationEntries?: SerializedEducationEntryState[];
   profile?: SerializedProfileState;
@@ -114,7 +123,12 @@ export function serializePositionState(state: PositionState): SerializedPosition
     company: state.company,
     positionTitle: state.positionTitle,
     positionResponsibilities: state.positionResponsibilities,
-    summary: state.summary,
+    summary: state.summaryEntries
+      .filter((entry) => !entry.hidden)
+      .map((entry) => entry.text),
+    skills: state.skillsEntries
+      .filter((entry) => !entry.hidden)
+      .map((entry) => entry.text),
     profile: {
       name: state.profile.name,
       email: state.profile.email,
@@ -170,6 +184,7 @@ export function isSerializedPositionState(value: unknown): value is SerializedPo
       typeof value.positionTitle !== "string") ||
     (typeof value.positionResponsibilities !== "undefined" &&
       typeof value.positionResponsibilities !== "string") ||
+    (typeof value.skills !== "undefined" && !Array.isArray(value.skills)) ||
     (typeof value.profileName !== "undefined" && typeof value.profileName !== "string") ||
     (typeof value.profileEmail !== "undefined" && typeof value.profileEmail !== "string") ||
     (typeof value.profileLinkedIn !== "undefined" && typeof value.profileLinkedIn !== "string") ||
@@ -184,6 +199,13 @@ export function isSerializedPositionState(value: unknown): value is SerializedPo
   if (
     typeof value.summary !== "undefined" &&
     (!Array.isArray(value.summary) || !value.summary.every((s) => typeof s === "string"))
+  ) {
+    return false;
+  }
+
+  if (
+    typeof value.skills !== "undefined" &&
+    (!Array.isArray(value.skills) || !value.skills.every((s) => typeof s === "string"))
   ) {
     return false;
   }
@@ -246,6 +268,9 @@ export function deserializePositionState(serialized: SerializedPositionState): P
   const summary = (serialized.summary ?? []).filter(
     (item): item is string => typeof item === "string",
   );
+  const skills = (serialized.skills ?? []).filter(
+    (item): item is string => typeof item === "string",
+  );
   const educationEntries = (serialized.educationEntries ?? []).map((education, index) => ({
     educationId: index + 1,
     name: education.name ?? "",
@@ -296,7 +321,16 @@ export function deserializePositionState(serialized: SerializedPositionState): P
     company: serialized.company ?? "",
     positionTitle: serialized.positionTitle ?? "",
     positionResponsibilities: serialized.positionResponsibilities ?? "",
-    summary,
+    summaryEntries: summary.map((text, index) => ({
+      entryId: index + 1,
+      text,
+      hidden: false,
+    })),
+    skillsEntries: skills.map((text, index) => ({
+      entryId: index + 1,
+      text,
+      hidden: false,
+    })),
     companyEntries,
     educationEntries,
     profile: {

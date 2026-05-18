@@ -1,5 +1,5 @@
-import { CheckRequest, ChangeRequest, CheckResult, ChangeResult } from "../shared/types";
-import { createCheckExperiencePrompt, createCheckSummaryPrompt, createChangeExperiencePrompt, createChangeSummaryPrompt} from "./prompts";
+import { CheckRequest, ChangeRequest, CheckResult, ChangeResult, SkillsRequest, SkillsResult } from "../shared/types";
+import { createCheckExperiencePrompt, createCheckSummaryPrompt, createChangeExperiencePrompt, createChangeSummaryPrompt, createSkillsPrompt} from "./prompts";
 
 type GeminiGenerateContentResponse = {
   candidates?: Array<{
@@ -85,6 +85,29 @@ export default class GeminiClient {
     }
 
     throw new Error("Gemini change response could not be parsed.");
+  }
+
+  public async skills(req: SkillsRequest): Promise<SkillsResult> {
+    const prompt = createSkillsPrompt(req);
+
+    const raw = await this.sendRequest(prompt);
+    const parsed = this.parseJsonObject(raw) as Partial<SkillsResult> | null;
+
+    if (parsed && typeof parsed === "object") {
+      const safeRating = Math.min(
+        10,
+        Math.max(0, Number(parsed.rating ?? 0)),
+      );
+
+      parsed.rating = Number.isFinite(safeRating) ? safeRating : 0;
+      parsed.suggestedSkills = Array.isArray(parsed.suggestedSkills) ? parsed.suggestedSkills : [];
+      parsed.irrelevantSkills = Array.isArray(parsed.irrelevantSkills) ? parsed.irrelevantSkills : [];
+      parsed.reasoning = String(parsed.reasoning ?? "").trim();
+
+      return parsed as SkillsResult;
+    }
+
+    throw new Error("Gemini skills response could not be parsed.");
   }
 
   private async sendRequest(prompt: string): Promise<string> {

@@ -14,7 +14,8 @@ const SUMMARY_COMPANY_ID = -1;
 
 export default function Summary() {
   const {
-    setSummaryEntries,
+    registerSummaryEntry,
+    updateSummaryEntry,
     loadStateRevision,
     loadedSerializedPositionState,
   } = useResumeGlobalState();
@@ -35,29 +36,39 @@ export default function Summary() {
     }
 
     const texts = loadedSerializedPositionState.summary ?? [];
-    setExperienceItems(
-      texts.length > 0
-        ? texts.map((text, index) => ({ id: index + 1, initialText: text }))
-        : [{ id: 1, initialText: "" }],
-    );
-    setEntryStateById({});
-    setHiddenEntryIds([]);
-    setCollapsedEntryIds([]);
+
+    const timeoutId = setTimeout(() => {
+      setExperienceItems(
+        texts.length > 0
+          ? texts.map((text, index) => ({ id: index + 1, initialText: text }))
+          : [{ id: 1, initialText: "" }],
+      );
+      setEntryStateById({});
+      setHiddenEntryIds([]);
+      setCollapsedEntryIds([]);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [loadStateRevision, loadedSerializedPositionState]);
 
   // Debounced write to global state.
   useEffect(() => {
-    const texts = experienceItems.map(
-      (item) => entryStateById[item.id]?.text ?? item.initialText,
-    );
     const timeoutId = setTimeout(() => {
-      setSummaryEntries(texts);
+      experienceItems.forEach((item) => {
+        registerSummaryEntry(item.id);
+        updateSummaryEntry(item.id, {
+          text: entryStateById[item.id]?.text ?? item.initialText,
+          hidden: hiddenEntryIds.includes(item.id),
+        });
+      });
     }, 200);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [experienceItems, entryStateById, setSummaryEntries]);
+  }, [experienceItems, entryStateById, hiddenEntryIds, registerSummaryEntry, updateSummaryEntry]);
 
   const handleAddExperience = () => {
     setExperienceItems((prev) => [...prev, { id: prev.length + 1, initialText: "" }]);
