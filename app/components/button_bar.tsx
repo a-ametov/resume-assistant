@@ -6,7 +6,7 @@ import { serializePositionState } from "../state/resume_position_state";
 import { useResumeGlobalState } from "./resume_global_state";
 
 type FileSystemWritableFileStreamLike = {
-  write: (data: string) => Promise<void>;
+  write: (data: string | Blob | ArrayBuffer | Uint8Array) => Promise<void>;
   close: () => Promise<void>;
 };
 
@@ -84,18 +84,46 @@ export default function ButtonBar() {
 
     try {
       const result = await backendClient.exportPdf();
-      const pdfBlob = new Blob([result.bytes], { type: result.contentType });
-      const downloadUrl = URL.createObjectURL(pdfBlob);
-      const downloadLink = document.createElement("a");
-
-      downloadLink.href = downloadUrl;
-      downloadLink.download = result.fileName.toLowerCase().endsWith(".pdf")
+      const pickerWindow = window as SaveFilePickerWindow;
+      const defaultName = result.fileName.toLowerCase().endsWith(".pdf")
         ? result.fileName
         : `${result.fileName}.pdf`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
-      URL.revokeObjectURL(downloadUrl);
+
+      if (pickerWindow.showSaveFilePicker) {
+        const fileHandle = await pickerWindow.showSaveFilePicker({
+          suggestedName: defaultName,
+          types: [
+            {
+              description: "PDF Files",
+              accept: { "application/pdf": [".pdf"] },
+            },
+          ],
+        });
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(new Blob([result.bytes], { type: result.contentType }));
+        await writable.close();
+      } else {
+        const customName = window.prompt("Save PDF as", defaultName);
+        if (!customName) {
+          return;
+        }
+
+        const chosenName = customName.toLowerCase().endsWith(".pdf")
+          ? customName
+          : `${customName}.pdf`;
+
+        const pdfBlob = new Blob([result.bytes], { type: result.contentType });
+        const downloadUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement("a");
+
+        downloadLink.href = downloadUrl;
+        downloadLink.download = chosenName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        URL.revokeObjectURL(downloadUrl);
+      }
     } catch (caughtError) {
       setExportError(
         caughtError instanceof Error ? caughtError.message : "Unable to export resume.",
