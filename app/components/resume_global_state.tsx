@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -47,6 +48,8 @@ type ResumeGlobalStateValue = {
   setSkillEntryHidden: (entryId: number, hidden: boolean) => void;
   profile: ProfileState;
   setProfile: (value: ProfileState) => void;
+  isDirty: boolean;
+  markSavedClean: () => void;
   isProfileVisible: boolean;
   toggleProfileVisible: () => void;
   positionState: PositionState;
@@ -119,6 +122,27 @@ const createDefaultTextEntry = (entryId: number): TextEntryState => ({
   hidden: false,
 });
 
+function hasPatchChanges<T extends object>(
+  current: T,
+  patch: Partial<T>,
+): boolean {
+  return Object.entries(patch).some(([key, value]) => {
+    const currentValue = current[key as keyof T];
+    return currentValue !== value;
+  });
+}
+
+function profilesEqual(left: ProfileState, right: ProfileState): boolean {
+  return (
+    left.name === right.name &&
+    left.email === right.email &&
+    left.linkedIn === right.linkedIn &&
+    left.phone === right.phone &&
+    left.targetRole === right.targetRole &&
+    left.targetLevel === right.targetLevel
+  );
+}
+
 export function ResumeGlobalStateProvider({
   children,
 }: {
@@ -131,7 +155,7 @@ export function ResumeGlobalStateProvider({
   const [skillsEntries, setSkillsEntries] = useState<TextEntryState[]>([]);
   const [educationEntries, setEducationEntries] = useState<EducationEntryState[]>([]);
   const [companyEntries, setCompanyEntries] = useState<CompanyEntryState[]>([]);
-  const [profile, setProfile] = useState<ProfileState>({
+  const [profile, setProfileState] = useState<ProfileState>({
     name: "",
     email: "",
     linkedIn: "",
@@ -140,6 +164,10 @@ export function ResumeGlobalStateProvider({
     targetLevel: "",
   });
   const [isProfileVisible, setIsProfileVisible] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const didInitializeDirtyTracking = useRef(false);
+  const suppressDirtyTracking = useRef(false);
+  const suppressDirtyTrackingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadStateRevision, setLoadStateRevision] = useState(0);
   const [loadedSerializedPositionState, setLoadedSerializedPositionState] =
     useState<SerializedPositionState | null>(null);
@@ -151,6 +179,14 @@ export function ResumeGlobalStateProvider({
       }
 
       const nextState = deserializePositionState(data);
+      suppressDirtyTracking.current = true;
+      if (suppressDirtyTrackingTimer.current !== null) {
+        clearTimeout(suppressDirtyTrackingTimer.current);
+      }
+      suppressDirtyTrackingTimer.current = setTimeout(() => {
+        suppressDirtyTracking.current = false;
+        suppressDirtyTrackingTimer.current = null;
+      }, 400);
       setLoadedSerializedPositionState(serializePositionState(nextState));
       setCompany(nextState.company);
       setPositionTitle(nextState.positionTitle);
@@ -159,13 +195,22 @@ export function ResumeGlobalStateProvider({
       setSkillsEntries(nextState.skillsEntries);
       setEducationEntries(nextState.educationEntries);
       setCompanyEntries(nextState.companyEntries);
-      setProfile(nextState.profile);
+      setProfileState(nextState.profile);
+      setIsDirty(false);
       setPositionState(nextState);
       setLoadStateRevision((prev) => prev + 1);
       return true;
     },
     [],
   );
+
+  useEffect(() => {
+    return () => {
+      if (suppressDirtyTrackingTimer.current !== null) {
+        clearTimeout(suppressDirtyTrackingTimer.current);
+      }
+    };
+  }, []);
 
   const registerEducationEntry = useCallback((educationId: number) => {
     setEducationEntries((prev) => {
@@ -192,6 +237,10 @@ export function ResumeGlobalStateProvider({
             ...patch,
           },
         ];
+      }
+
+      if (!hasPatchChanges(existing, patch)) {
+        return prev;
       }
 
       return prev.map((entry) =>
@@ -230,6 +279,10 @@ export function ResumeGlobalStateProvider({
             ...patch,
           },
         ];
+      }
+
+      if (!hasPatchChanges(existing, patch)) {
+        return prev;
       }
 
       return prev.map((entry) =>
@@ -282,14 +335,20 @@ export function ResumeGlobalStateProvider({
 
       const updatedExperiences =
         experienceIndex >= 0
-          ? companyEntry.experiences.map((entry, index) =>
-              index === experienceIndex
-                ? {
-                    ...entry,
-                    ...patch,
-                  }
-                : entry,
-            )
+          ? companyEntry.experiences.map((entry, index) => {
+              if (index !== experienceIndex) {
+                return entry;
+              }
+
+              if (!hasPatchChanges(entry, patch)) {
+                return entry;
+              }
+
+              return {
+                ...entry,
+                ...patch,
+              };
+            })
           : [
               ...companyEntry.experiences,
               {
@@ -297,6 +356,13 @@ export function ResumeGlobalStateProvider({
                 ...patch,
               },
             ];
+
+      if (
+        experienceIndex >= 0 &&
+        updatedExperiences[experienceIndex] === companyEntry.experiences[experienceIndex]
+      ) {
+        return prev;
+      }
 
       const updatedCompany: CompanyEntryState = {
         ...companyEntry,
@@ -346,6 +412,10 @@ export function ResumeGlobalStateProvider({
         ];
       }
 
+      if (!hasPatchChanges(existing, patch)) {
+        return prev;
+      }
+
       return prev.map((entry) =>
         entry.entryId === entryId
           ? {
@@ -388,6 +458,10 @@ export function ResumeGlobalStateProvider({
         ];
       }
 
+      if (!hasPatchChanges(existing, patch)) {
+        return prev;
+      }
+
       return prev.map((entry) =>
         entry.entryId === entryId
           ? {
@@ -405,6 +479,14 @@ export function ResumeGlobalStateProvider({
 
   const toggleProfileVisible = useCallback(() => {
     setIsProfileVisible((prev) => !prev);
+  }, []);
+
+  const markSavedClean = useCallback(() => {
+    setIsDirty(false);
+  }, []);
+
+  const setProfile = useCallback((value: ProfileState) => {
+    setProfileState((prev) => (profilesEqual(prev, value) ? prev : value));
   }, []);
 
   const positionState: PositionState = useMemo(
@@ -434,6 +516,25 @@ export function ResumeGlobalStateProvider({
     });
   }, [company, positionTitle, positionResponsibilities, summaryEntries, skillsEntries, educationEntries, companyEntries, profile]);
 
+  useEffect(() => {
+    if (!didInitializeDirtyTracking.current) {
+      didInitializeDirtyTracking.current = true;
+      return;
+    }
+
+    if (suppressDirtyTracking.current) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setIsDirty(true);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [company, positionTitle, positionResponsibilities, summaryEntries, skillsEntries, educationEntries, companyEntries, profile]);
+
   const value: ResumeGlobalStateValue = useMemo(
     () => ({
       company,
@@ -452,6 +553,8 @@ export function ResumeGlobalStateProvider({
       setSkillEntryHidden,
       profile,
       setProfile,
+      isDirty,
+      markSavedClean,
       isProfileVisible,
       toggleProfileVisible,
       positionState,
@@ -473,6 +576,7 @@ export function ResumeGlobalStateProvider({
       summaryEntries,
       skillsEntries,
       profile,
+      isDirty,
       isProfileVisible,
       loadStateRevision,
       loadedSerializedPositionState,
@@ -490,6 +594,7 @@ export function ResumeGlobalStateProvider({
       registerSkillEntry,
       updateSkillEntry,
       setSkillEntryHidden,
+      markSavedClean,
       toggleProfileVisible,
       positionState,
     ],

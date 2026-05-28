@@ -57,6 +57,13 @@ export type EducationEntryState = {
   hidden: boolean;
 };
 
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits.length ? `(${digits}` : "";
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 let currentPositionState: PositionState = {
   company: "",
   positionTitle: "",
@@ -347,7 +354,7 @@ export function deserializePositionState(serialized: SerializedPositionState): P
       name: serialized.profile?.name ?? serialized.profileName ?? "",
       email: serialized.profile?.email ?? serialized.profileEmail ?? "",
       linkedIn: serialized.profile?.linkedIn ?? serialized.profileLinkedIn ?? "",
-      phone: serialized.profile?.phone ?? serialized.profilePhone ?? "",
+      phone: formatPhone(serialized.profile?.phone ?? serialized.profilePhone ?? ""),
       targetRole: serialized.profile?.targetRole ?? "",
       targetLevel: serialized.profile?.targetLevel ?? "",
     },

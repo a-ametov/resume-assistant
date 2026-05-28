@@ -25,7 +25,7 @@ type SaveFilePickerWindow = Window & {
 };
 
 export default function ButtonBar() {
-  const { positionState, loadSerializedPositionState } = useResumeGlobalState();
+  const { positionState, loadSerializedPositionState, isDirty, markSavedClean } = useResumeGlobalState();
   const backendClient = BackendClient.getInstance();
   const [saveError, setSaveError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -59,6 +59,7 @@ export default function ButtonBar() {
       const serialized = serializePositionState(positionState);
       await writable.write(`${JSON.stringify(serialized, null, 2)}\n`);
       await writable.close();
+      markSavedClean();
     } catch (caughtError) {
       const errorMessage =
         caughtError instanceof Error ? caughtError.message : "Unable to save file.";
@@ -171,8 +172,12 @@ export default function ButtonBar() {
           title="Save"
           aria-label="Save"
           onClick={handleSave}
-          disabled={isSaving}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+          disabled={isSaving || !isDirty}
+          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-md border transition disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400 ${
+            isDirty
+              ? "border-zinc-300 bg-zinc-100 text-zinc-800 hover:bg-zinc-200"
+              : "border-zinc-200 bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
+          }`}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -189,6 +194,21 @@ export default function ButtonBar() {
             <path d="M8 4v6h8V4" />
             <path d="M8 20v-6h8v6" />
           </svg>
+          {!isDirty ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-green-600"
+              aria-hidden="true"
+            >
+              <path d="m5 12 4 4 10-10" />
+            </svg>
+          ) : null}
         </button>
         <button
           type="button"
