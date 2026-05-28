@@ -25,7 +25,7 @@ type SaveFilePickerWindow = Window & {
 };
 
 export default function ButtonBar() {
-  const { positionState, loadSerializedPositionState, isProfileVisible, toggleProfileVisible } = useResumeGlobalState();
+  const { positionState, loadSerializedPositionState } = useResumeGlobalState();
   const backendClient = BackendClient.getInstance();
   const [saveError, setSaveError] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -166,41 +166,6 @@ export default function ButtonBar() {
           className="hidden"
           onChange={handleFileSelected}
         />
-        <button
-          type="button"
-          title="Profile"
-          aria-label={isProfileVisible ? "Hide profile" : "Show profile"}
-          onClick={toggleProfileVisible}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200"
-        >
-          {isProfileVisible ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4"
-              aria-hidden="true"
-            >
-              <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />
-              <path d="M3 20c0-4.418 4.03-8 9-8s9 3.582 9 8" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" />
-            </svg>
-          )}
-        </button>
         <button
           type="button"
           title="Save"

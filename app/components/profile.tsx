@@ -13,7 +13,6 @@ export default function Profile() {
   const {
     profile,
     setProfile,
-    isProfileVisible,
     loadedSerializedPositionState,
   } = useResumeGlobalState();
 
@@ -43,13 +42,9 @@ export default function Profile() {
     return () => clearTimeout(timeoutId);
   }, [name, email, linkedIn, phone, setProfile]);
 
-  if (!isProfileVisible) {
-    return null;
-  }
-
   return (
     <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-zinc-800" htmlFor="profile-name">
             Name
