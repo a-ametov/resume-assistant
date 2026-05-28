@@ -48,9 +48,8 @@ export default class BackendClient {
         ? state.companyEntries.find((entry) => entry.companyId === companyId)
         : undefined;
 
-    const targetCompany = state.company.trim();
-    const targetCompanyPositionTitle = state.positionTitle.trim();
-    const targetCompanyPositionResponsibilities = state.positionResponsibilities.trim();
+    const targetRole = state.profile.targetRole.trim();
+    const targetLevel = state.profile.targetLevel.trim();
     const previousCompany = targetCompanyEntry?.companyName.trim() ?? "";
     const previousCompanyPositionTitle = targetCompanyEntry?.positionTitle.trim() ?? "";
 
@@ -73,9 +72,8 @@ export default class BackendClient {
 
     return {
       text,
-      targetCompany,
-      targetCompanyPositionTitle,
-      targetCompanyPositionResponsibilities,
+      targetRole,
+      targetLevel,
       previousCompany,
       previousCompanyPositionTitle,
       previousCompanyExperiencesContext,
@@ -132,6 +130,8 @@ export default class BackendClient {
         email: state.profile.email,
         linkedin: state.profile.linkedIn,
         phone: state.profile.phone,
+        targetRole: state.profile.targetRole,
+        targetLevel: state.profile.targetLevel,
       },
       summary: state.summaryEntries
         .filter((entry) => !entry.hidden)
@@ -174,9 +174,8 @@ export default class BackendClient {
         .filter((skill) => skill.length > 0);
 
     return {
-      targetCompany: state.company.trim(),
-      targetCompanyPositionTitle: state.positionTitle.trim(),
-      targetCompanyPositionResponsibilities: state.positionResponsibilities.trim(),
+      targetRole: state.profile.targetRole.trim(),
+      targetLevel: state.profile.targetLevel.trim(),
       listedSkills,
       previousExperience: state.companyEntries
         .filter((company) => !company.hidden)

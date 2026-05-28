@@ -16,9 +16,8 @@ export type ChangeResult = {
 
 export type CheckRequest = {
   text: string;
-  targetCompany: string;
-  targetCompanyPositionTitle: string;
-  targetCompanyPositionResponsibilities: string;
+  targetRole: string;
+  targetLevel: string;
   previousCompany: string;
   previousCompanyPositionTitle: string;
   previousCompanyExperiencesContext: string[];
@@ -36,9 +35,8 @@ export type ConciseCompanyEntry = {
 }
 
 export type SkillsRequest = {
-  targetCompany: string;
-  targetCompanyPositionTitle: string;
-  targetCompanyPositionResponsibilities: string;
+  targetRole: string;
+  targetLevel: string;
   listedSkills: string[];
   previousExperience: ConciseCompanyEntry[];
 };
@@ -55,6 +53,8 @@ export type ExportProfile = {
   email: string;
   linkedin: string;
   phone: string;
+  targetRole: string;
+  targetLevel: string;
 };
 
 export type ExportCompanyEntry = {

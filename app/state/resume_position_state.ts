@@ -3,6 +3,8 @@ export type ProfileState = {
   email: string;
   linkedIn: string;
   phone: string;
+  targetRole: string;
+  targetLevel: string;
 };
 
 export type PositionState = {
@@ -68,6 +70,8 @@ let currentPositionState: PositionState = {
     email: "",
     linkedIn: "",
     phone: "",
+    targetRole: "",
+    targetLevel: "",
   },
 };
 
@@ -100,6 +104,8 @@ export type SerializedProfileState = {
   email?: string;
   linkedIn?: string;
   phone?: string;
+  targetRole?: string;
+  targetLevel?: string;
 };
 
 export type SerializedPositionState = {
@@ -134,6 +140,8 @@ export function serializePositionState(state: PositionState): SerializedPosition
       email: state.profile.email,
       linkedIn: state.profile.linkedIn,
       phone: state.profile.phone,
+      targetRole: state.profile.targetRole,
+      targetLevel: state.profile.targetLevel,
     },
     educationEntries: state.educationEntries
       .filter((education) => !education.hidden)
@@ -173,7 +181,9 @@ export function isSerializedPositionState(value: unknown): value is SerializedPo
       (typeof profile.name !== "undefined" && typeof profile.name !== "string") ||
       (typeof profile.email !== "undefined" && typeof profile.email !== "string") ||
       (typeof profile.linkedIn !== "undefined" && typeof profile.linkedIn !== "string") ||
-      (typeof profile.phone !== "undefined" && typeof profile.phone !== "string"))
+      (typeof profile.phone !== "undefined" && typeof profile.phone !== "string") ||
+      (typeof profile.targetRole !== "undefined" && typeof profile.targetRole !== "string") ||
+      (typeof profile.targetLevel !== "undefined" && typeof profile.targetLevel !== "string"))
   ) {
     return false;
   }
@@ -338,6 +348,8 @@ export function deserializePositionState(serialized: SerializedPositionState): P
       email: serialized.profile?.email ?? serialized.profileEmail ?? "",
       linkedIn: serialized.profile?.linkedIn ?? serialized.profileLinkedIn ?? "",
       phone: serialized.profile?.phone ?? serialized.profilePhone ?? "",
+      targetRole: serialized.profile?.targetRole ?? "",
+      targetLevel: serialized.profile?.targetLevel ?? "",
     },
   };
 }

@@ -16,10 +16,12 @@ export default function Profile() {
     loadedSerializedPositionState,
   } = useResumeGlobalState();
 
-  const [name, setName] = useState(profile.name);
-  const [email, setEmail] = useState(profile.email);
-  const [linkedIn, setLinkedIn] = useState(profile.linkedIn);
-  const [phone, setPhone] = useState(profile.phone);
+  const [name, setName] = useState(profile.name ?? "");
+  const [email, setEmail] = useState(profile.email ?? "");
+  const [linkedIn, setLinkedIn] = useState(profile.linkedIn ?? "");
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [targetRole, setTargetRole] = useState(profile.targetRole ?? "");
+  const [targetLevel, setTargetLevel] = useState(profile.targetLevel ?? "");
 
   useEffect(() => {
     if (loadedSerializedPositionState) {
@@ -27,6 +29,8 @@ export default function Profile() {
       setEmail(loadedSerializedPositionState.profile?.email ?? "");
       setLinkedIn(loadedSerializedPositionState.profile?.linkedIn ?? "");
       setPhone(formatPhone(loadedSerializedPositionState.profile?.phone ?? ""));
+      setTargetRole(loadedSerializedPositionState.profile?.targetRole ?? "");
+      setTargetLevel(loadedSerializedPositionState.profile?.targetLevel ?? "");
     }
   }, [loadedSerializedPositionState]);
 
@@ -37,10 +41,12 @@ export default function Profile() {
         email,
         linkedIn,
         phone,
+        targetRole,
+        targetLevel,
       });
     }, 200);
     return () => clearTimeout(timeoutId);
-  }, [name, email, linkedIn, phone, setProfile]);
+  }, [name, email, linkedIn, phone, targetRole, targetLevel, setProfile]);
 
   return (
     <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -97,6 +103,38 @@ export default function Profile() {
             placeholder="(000) 123-4567"
             value={phone}
             onChange={(e) => setPhone(formatPhone(e.target.value))}
+            className="h-10 rounded-md border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+          />
+        </div>
+
+        <div className="mt-2 border-t border-zinc-200 pt-3">
+          <p className="text-sm font-medium text-zinc-800">Targeting</p>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-zinc-800" htmlFor="profile-target-role">
+            Role
+          </label>
+          <input
+            id="profile-target-role"
+            type="text"
+            placeholder="e.g. Software Engineer"
+            value={targetRole}
+            onChange={(e) => setTargetRole(e.target.value)}
+            className="h-10 rounded-md border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-zinc-800" htmlFor="profile-target-level">
+            Level
+          </label>
+          <input
+            id="profile-target-level"
+            type="text"
+            placeholder="e.g. Senior"
+            value={targetLevel}
+            onChange={(e) => setTargetLevel(e.target.value)}
             className="h-10 rounded-md border border-zinc-300 px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
           />
         </div>

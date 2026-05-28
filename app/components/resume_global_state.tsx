@@ -136,6 +136,8 @@ export function ResumeGlobalStateProvider({
     email: "",
     linkedIn: "",
     phone: "",
+    targetRole: "",
+    targetLevel: "",
   });
   const [isProfileVisible, setIsProfileVisible] = useState(false);
   const [loadStateRevision, setLoadStateRevision] = useState(0);

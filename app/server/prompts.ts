@@ -2,9 +2,8 @@ import type { ChangeRequest, CheckRequest, SkillsRequest } from "../shared/types
 
 const experienceBase = [
 	"You are evaluating a resume entry on a job application.",
-	"The candidate is applying for a position at {{targetCompany}}",
-	"The role they are targeting is {{targetCompanyPositionTitle}}",
-	"The responsibilities of the role are listed as: {{targetCompanyPositionResponsibilities}}",
+	"The candidate is applying for a position as a {{targetRole}}",
+	"The level they are targeting is {{targetLevel}}",
 	"This entry is for the candidate's previous experience working at {{previousCompany}} (Previous Company)",
 	"The title they held at that company was {{previousCompanyPositionTitle}}",
 	"Other Experience Entries for the same company they worked at:",
@@ -18,9 +17,8 @@ const experienceBase = [
 
 const summaryBase = [
 	"You are evaluating a resume entry on a job application.",
-	"The candidate is applying for a position at {{targetCompany}}",
-	"The role they are targeting is {{targetCompanyPositionTitle}}",
-	"The responsibilities of the role are listed as: {{targetCompanyPositionResponsibilities}}",
+	"The candidate is applying for a position as a {{targetRole}}",
+	"The level they are targeting is {{targetLevel}}",
 	"This entry is a portion of the candidate summary at the top of the resume.",
 	"Limit changes to rephrasing only, no new responsibilities should be written.",
 	"Target the feedback to be for the role the candidate is applying for.",
@@ -112,9 +110,8 @@ const changeExperienceTemplate = [
 
 const skillsTemplate = [
 	"You are evaluating candidate skills on a job application.",
-	"The candidate is applying for a position at {{targetCompany}}",
-	"The role they are targeting is {{targetCompanyPositionTitle}}",
-	"The responsibilities of the role are listed as: {{targetCompanyPositionResponsibilities}}",
+	"The candidate is applying for a position as a {{targetRole}}",
+	"The level they are targeting is {{targetLevel}}",
 	"",
 	"This is the candidate's previous work experience and responsibilities,",
 	"In the format of <Company>:",
