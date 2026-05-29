@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getStableIdentityKey } from "../../../server/auth_identity";
 import MongoDbClient from "../../../server/mongodb_client";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     const identityKey = await getStableIdentityKey();

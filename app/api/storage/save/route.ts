@@ -3,6 +3,8 @@ import { getStableIdentityKey } from "../../../server/auth_identity";
 import MongoDbClient from "../../../server/mongodb_client";
 import type { SerializedAppState } from "../../../state/app_state";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const identityKey = await getStableIdentityKey();
