@@ -7,7 +7,7 @@ export type ProfileState = {
   targetLevel: string;
 };
 
-export type PositionState = {
+export type AppState = {
   company: string;
   positionTitle: string;
   positionResponsibilities: string;
@@ -64,7 +64,7 @@ function formatPhone(value: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-let currentPositionState: PositionState = {
+let currentAppState: AppState = {
   company: "",
   positionTitle: "",
   positionResponsibilities: "",
@@ -82,12 +82,12 @@ let currentPositionState: PositionState = {
   },
 };
 
-export function setPositionState(next: PositionState) {
-  currentPositionState = next;
+export function setAppState(next: AppState) {
+  currentAppState = next;
 }
 
-export function getPositionState(): PositionState {
-  return currentPositionState;
+export function getAppState(): AppState {
+  return currentAppState;
 }
 
 export type SerializedCompanyEntryState = {
@@ -115,7 +115,7 @@ export type SerializedProfileState = {
   targetLevel?: string;
 };
 
-export type SerializedPositionState = {
+export type SerializedAppState = {
   company?: string;
   positionTitle?: string;
   positionResponsibilities?: string;
@@ -131,7 +131,7 @@ export type SerializedPositionState = {
   profilePhone?: string;
 };
 
-export function serializePositionState(state: PositionState): SerializedPositionState {
+export function serializeAppState(state: AppState): SerializedAppState {
   return {
     company: state.company,
     positionTitle: state.positionTitle,
@@ -175,7 +175,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function isSerializedPositionState(value: unknown): value is SerializedPositionState {
+export function isSerializedAppState(value: unknown): value is SerializedAppState {
   if (!isObject(value)) {
     return false;
   }
@@ -281,7 +281,7 @@ export function isSerializedPositionState(value: unknown): value is SerializedPo
   });
 }
 
-export function deserializePositionState(serialized: SerializedPositionState): PositionState {
+export function deserializeAppState(serialized: SerializedAppState): AppState {
   const summary = (serialized.summary ?? []).filter(
     (item): item is string => typeof item === "string",
   );

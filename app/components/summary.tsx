@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ExperienceEntryState } from "../state/resume_position_state";
+import type { ExperienceEntryState } from "../state/app_state";
 import ExperienceEntry from "./experience_entry";
 import { useResumeGlobalState } from "./resume_global_state";
 
@@ -17,7 +17,7 @@ export default function Summary() {
     registerSummaryEntry,
     updateSummaryEntry,
     loadStateRevision,
-    loadedSerializedPositionState,
+    loadedSerializedAppState,
   } = useResumeGlobalState();
   const [experienceItems, setExperienceItems] = useState<ExperienceItem[]>(
     [{ id: 1, initialText: "" }],
@@ -31,11 +31,11 @@ export default function Summary() {
 
   // Rehydrate from loaded state.
   useEffect(() => {
-    if (!loadedSerializedPositionState) {
+    if (!loadedSerializedAppState) {
       return;
     }
 
-    const texts = loadedSerializedPositionState.summary ?? [];
+    const texts = loadedSerializedAppState.summary ?? [];
 
     const timeoutId = setTimeout(() => {
       setExperienceItems(
@@ -51,7 +51,7 @@ export default function Summary() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [loadStateRevision, loadedSerializedPositionState]);
+  }, [loadStateRevision, loadedSerializedAppState]);
 
   // Debounced write to global state.
   useEffect(() => {

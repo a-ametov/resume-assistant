@@ -13,17 +13,17 @@ import type {
   CompanyEntryState,
   EducationEntryState,
   ExperienceEntryState,
-  PositionState,
+  AppState,
   ProfileState,
-  SerializedPositionState,
+  SerializedAppState,
   TextEntryState,
-} from "../state/resume_position_state";
+} from "../state/app_state";
 import {
-  deserializePositionState,
-  isSerializedPositionState,
-  serializePositionState,
-  setPositionState,
-} from "../state/resume_position_state";
+  deserializeAppState,
+  isSerializedAppState,
+  serializeAppState,
+  setAppState,
+} from "../state/app_state";
 
 type ResumeGlobalStateValue = {
   company: string;
@@ -52,10 +52,10 @@ type ResumeGlobalStateValue = {
   markSavedClean: () => void;
   isProfileVisible: boolean;
   toggleProfileVisible: () => void;
-  positionState: PositionState;
+  appState: AppState;
   loadStateRevision: number;
-  loadedSerializedPositionState: SerializedPositionState | null;
-  loadSerializedPositionState: (data: unknown) => data is SerializedPositionState;
+  loadedSerializedAppState: SerializedAppState | null;
+  loadSerializedAppState: (data: unknown) => data is SerializedAppState;
   registerEducationEntry: (educationId: number) => void;
   updateEducationEntry: (
     educationId: number,
@@ -169,16 +169,16 @@ export function ResumeGlobalStateProvider({
   const suppressDirtyTracking = useRef(false);
   const suppressDirtyTrackingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadStateRevision, setLoadStateRevision] = useState(0);
-  const [loadedSerializedPositionState, setLoadedSerializedPositionState] =
-    useState<SerializedPositionState | null>(null);
+  const [loadedSerializedAppState, setLoadedSerializedAppState] =
+    useState<SerializedAppState | null>(null);
 
-  const loadSerializedPositionState = useCallback(
-    (data: unknown): data is SerializedPositionState => {
-      if (!isSerializedPositionState(data)) {
+  const loadSerializedAppState = useCallback(
+    (data: unknown): data is SerializedAppState => {
+      if (!isSerializedAppState(data)) {
         return false;
       }
 
-      const nextState = deserializePositionState(data);
+      const nextState = deserializeAppState(data);
       suppressDirtyTracking.current = true;
       if (suppressDirtyTrackingTimer.current !== null) {
         clearTimeout(suppressDirtyTrackingTimer.current);
@@ -187,7 +187,7 @@ export function ResumeGlobalStateProvider({
         suppressDirtyTracking.current = false;
         suppressDirtyTrackingTimer.current = null;
       }, 400);
-      setLoadedSerializedPositionState(serializePositionState(nextState));
+      setLoadedSerializedAppState(serializeAppState(nextState));
       setCompany(nextState.company);
       setPositionTitle(nextState.positionTitle);
       setPositionResponsibilities(nextState.positionResponsibilities);
@@ -197,7 +197,7 @@ export function ResumeGlobalStateProvider({
       setCompanyEntries(nextState.companyEntries);
       setProfileState(nextState.profile);
       setIsDirty(false);
-      setPositionState(nextState);
+      setAppState(nextState);
       setLoadStateRevision((prev) => prev + 1);
       return true;
     },
@@ -489,7 +489,7 @@ export function ResumeGlobalStateProvider({
     setProfileState((prev) => (profilesEqual(prev, value) ? prev : value));
   }, []);
 
-  const positionState: PositionState = useMemo(
+  const appState: AppState = useMemo(
     () => ({
       company,
       positionTitle,
@@ -504,7 +504,7 @@ export function ResumeGlobalStateProvider({
   );
 
   useEffect(() => {
-    setPositionState({
+    setAppState({
       company,
       positionTitle,
       positionResponsibilities,
@@ -557,10 +557,10 @@ export function ResumeGlobalStateProvider({
       markSavedClean,
       isProfileVisible,
       toggleProfileVisible,
-      positionState,
+      appState,
       loadStateRevision,
-      loadedSerializedPositionState,
-      loadSerializedPositionState,
+      loadedSerializedAppState,
+      loadSerializedAppState,
       registerEducationEntry,
       updateEducationEntry,
       registerCompanyEntry,
@@ -579,8 +579,8 @@ export function ResumeGlobalStateProvider({
       isDirty,
       isProfileVisible,
       loadStateRevision,
-      loadedSerializedPositionState,
-      loadSerializedPositionState,
+      loadedSerializedAppState,
+      loadSerializedAppState,
       registerEducationEntry,
       updateEducationEntry,
       registerCompanyEntry,
@@ -596,7 +596,7 @@ export function ResumeGlobalStateProvider({
       setSkillEntryHidden,
       markSavedClean,
       toggleProfileVisible,
-      positionState,
+      appState,
     ],
   );
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SerializedCompanyEntryState } from "../state/resume_position_state";
+import type { SerializedCompanyEntryState } from "../state/app_state";
 import CompanyEntry from "./company_entry";
 import { useResumeGlobalState } from "./resume_global_state";
 
@@ -15,24 +15,24 @@ export default function CompanyEntries() {
     registerCompanyEntry,
     updateCompanyEntry,
     loadStateRevision,
-    loadedSerializedPositionState,
+    loadedSerializedAppState,
   } = useResumeGlobalState();
   const [companyItems, setCompanyItems] = useState<CompanyItem[]>([{ id: 1 }]);
   const [hiddenCompanyIds, setHiddenCompanyIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (!loadedSerializedPositionState) {
+    if (!loadedSerializedAppState) {
       return;
     }
 
     setCompanyItems(
-      (loadedSerializedPositionState.companyEntries ?? []).map((company, index) => ({
+      (loadedSerializedAppState.companyEntries ?? []).map((company, index) => ({
         id: index + 1,
         initialData: company,
       })),
     );
     setHiddenCompanyIds([]);
-  }, [loadStateRevision, loadedSerializedPositionState]);
+  }, [loadStateRevision, loadedSerializedAppState]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

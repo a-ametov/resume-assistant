@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SerializedCompanyEntryState } from "../state/resume_position_state";
+import type { SerializedCompanyEntryState } from "../state/app_state";
 import ExperienceEntry from "./experience_entry";
 import { useResumeGlobalState } from "./resume_global_state";
 

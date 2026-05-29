@@ -1,4 +1,4 @@
-import { getPositionState } from "../state/resume_position_state";
+import { getAppState } from "../state/app_state";
 import type {
   CheckRequest,
   ChangeRequest,
@@ -42,7 +42,7 @@ export default class BackendClient {
     entryId?: number,
     isSummary = false,
   ): CheckRequest {
-    const state = getPositionState();
+    const state = getAppState();
     const targetCompanyEntry =
       !isSummary && typeof companyId === "number"
         ? state.companyEntries.find((entry) => entry.companyId === companyId)
@@ -122,7 +122,7 @@ export default class BackendClient {
   }
 
   private buildExportRequest(): ExportRequest {
-    const state = getPositionState();
+    const state = getAppState();
 
     return {
       profile: {
@@ -165,7 +165,7 @@ export default class BackendClient {
   }
 
   private buildSkillsRequest(listedSkillsOverride?: string[]): SkillsRequest {
-    const state = getPositionState();
+    const state = getAppState();
     const listedSkills =
       listedSkillsOverride ??
       state.skillsEntries

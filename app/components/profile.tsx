@@ -13,7 +13,7 @@ export default function Profile() {
   const {
     profile,
     setProfile,
-    loadedSerializedPositionState,
+    loadedSerializedAppState,
   } = useResumeGlobalState();
 
   const [name, setName] = useState(profile.name ?? "");
@@ -24,15 +24,15 @@ export default function Profile() {
   const [targetLevel, setTargetLevel] = useState(profile.targetLevel ?? "");
 
   useEffect(() => {
-    if (loadedSerializedPositionState) {
-      setName(loadedSerializedPositionState.profile?.name ?? "");
-      setEmail(loadedSerializedPositionState.profile?.email ?? "");
-      setLinkedIn(loadedSerializedPositionState.profile?.linkedIn ?? "");
-      setPhone(formatPhone(loadedSerializedPositionState.profile?.phone ?? ""));
-      setTargetRole(loadedSerializedPositionState.profile?.targetRole ?? "");
-      setTargetLevel(loadedSerializedPositionState.profile?.targetLevel ?? "");
+    if (loadedSerializedAppState) {
+      setName(loadedSerializedAppState.profile?.name ?? "");
+      setEmail(loadedSerializedAppState.profile?.email ?? "");
+      setLinkedIn(loadedSerializedAppState.profile?.linkedIn ?? "");
+      setPhone(formatPhone(loadedSerializedAppState.profile?.phone ?? ""));
+      setTargetRole(loadedSerializedAppState.profile?.targetRole ?? "");
+      setTargetLevel(loadedSerializedAppState.profile?.targetLevel ?? "");
     }
-  }, [loadedSerializedPositionState]);
+  }, [loadedSerializedAppState]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

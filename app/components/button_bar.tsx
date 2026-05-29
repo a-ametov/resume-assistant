@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import BackendClient from "../client/backend_client";
-import { serializePositionState } from "../state/resume_position_state";
+import { serializeAppState } from "../state/app_state";
 import { useResumeGlobalState } from "./resume_global_state";
 
 type FileSystemWritableFileStreamLike = {
@@ -25,24 +25,59 @@ type SaveFilePickerWindow = Window & {
 };
 
 export default function ButtonBar() {
-  const { positionState, loadSerializedPositionState, isDirty, markSavedClean } = useResumeGlobalState();
+  const { appState, loadSerializedAppState, isDirty, markSavedClean } = useResumeGlobalState();
   const backendClient = BackendClient.getInstance();
   const [saveError, setSaveError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [exportError, setExportError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingState, setIsExportingState] = useState(false);
+  const [isOutOfSync, setIsOutOfSync] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const isSaveDisabled = isSaving || (!isDirty && !isOutOfSync);
+  const isSaveActive = isDirty || isOutOfSync;
 
   const handleSave = async () => {
+    setSaveError("");
+    setIsSaving(true);
+
+    try {
+      const serialized = serializeAppState(appState);
+      const response = await fetch("/api/storage/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(serialized),
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Unable to save state (${response.status}).`);
+      }
+
+      markSavedClean();
+      setIsOutOfSync(false);
+    } catch (caughtError) {
+      const errorMessage =
+        caughtError instanceof Error ? caughtError.message : "Unable to save state.";
+
+      setSaveError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExportState = async () => {
     const pickerWindow = window as SaveFilePickerWindow;
     if (!pickerWindow.showSaveFilePicker) {
-      setSaveError("Save dialog is not supported in this browser.");
+      setExportError("Save dialog is not supported in this browser.");
       return;
     }
 
-    setSaveError("");
-    setIsSaving(true);
+    setExportError("");
+    setIsExportingState(true);
 
     try {
       const fileHandle = await pickerWindow.showSaveFilePicker({
@@ -56,21 +91,20 @@ export default function ButtonBar() {
       });
 
       const writable = await fileHandle.createWritable();
-      const serialized = serializePositionState(positionState);
+      const serialized = serializeAppState(appState);
       await writable.write(`${JSON.stringify(serialized, null, 2)}\n`);
       await writable.close();
-      markSavedClean();
     } catch (caughtError) {
       const errorMessage =
-        caughtError instanceof Error ? caughtError.message : "Unable to save file.";
+        caughtError instanceof Error ? caughtError.message : "Unable to export state file.";
 
       if (errorMessage.toLowerCase().includes("abort")) {
         return;
       }
 
-      setSaveError(errorMessage);
+      setExportError(errorMessage);
     } finally {
-      setIsSaving(false);
+      setIsExportingState(false);
     }
   };
 
@@ -146,10 +180,12 @@ export default function ButtonBar() {
     try {
       const text = await selectedFile.text();
       const parsed = JSON.parse(text) as unknown;
-      const isValid = loadSerializedPositionState(parsed);
+      const isValid = loadSerializedAppState(parsed);
 
       if (!isValid) {
         setLoadError("Invalid resume state file.");
+      } else {
+        setIsOutOfSync(true);
       }
     } catch {
       setLoadError("Invalid resume state file.");
@@ -172,9 +208,9 @@ export default function ButtonBar() {
           title="Save"
           aria-label="Save"
           onClick={handleSave}
-          disabled={isSaving || !isDirty}
+          disabled={isSaveDisabled}
           className={`relative inline-flex h-10 w-10 items-center justify-center rounded-md border transition disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400 ${
-            isDirty
+            isSaveActive
               ? "border-zinc-300 bg-zinc-100 text-zinc-800 hover:bg-zinc-200"
               : "border-zinc-200 bg-zinc-50 text-zinc-400 hover:bg-zinc-100"
           }`}
@@ -194,7 +230,22 @@ export default function ButtonBar() {
             <path d="M8 4v6h8V4" />
             <path d="M8 20v-6h8v6" />
           </svg>
-          {!isDirty ? (
+          {isOutOfSync ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-red-600"
+              aria-hidden="true"
+            >
+              <path d="M12 7v6" />
+              <path d="M12 17h.01" />
+            </svg>
+          ) : !isDirty ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -212,8 +263,8 @@ export default function ButtonBar() {
         </button>
         <button
           type="button"
-          title="Load"
-          aria-label="Load"
+          title="Import"
+          aria-label="Import"
           onClick={handleLoadClick}
           className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200"
         >
@@ -228,15 +279,41 @@ export default function ButtonBar() {
             className="h-4 w-4"
             aria-hidden="true"
           >
-            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-            <path d="M12 3v13" />
-            <path d="m8 13 4 4 4-4" />
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M12 12v6" />
+            <path d="m9 15 3 3 3-3" />
           </svg>
         </button>
         <button
           type="button"
           title="Export"
           aria-label="Export"
+          onClick={handleExportState}
+          disabled={isExportingState}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M12 18V12" />
+            <path d="m9 15 3-3 3 3" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          title="Generate"
+          aria-label="Generate"
           onClick={handleExport}
           disabled={isExporting}
           className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"

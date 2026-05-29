@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import BackendClient from "../client/backend_client";
-import type { ExperienceEntryState } from "../state/resume_position_state";
+import type { ExperienceEntryState } from "../state/app_state";
 
 type ExperienceEntryProps = {
   companyId: number;

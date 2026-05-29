@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { auth } from "@/auth";
+import AuthProvider from "./components/auth_provider";
+import AuthStateLoader from "./components/auth_state_loader";
 import { ResumeGlobalStateProvider } from "./components/resume_global_state";
 import "./globals.css";
 
@@ -18,18 +21,25 @@ export const metadata: Metadata = {
   description: "AI-powered resume review and improvement tool.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ResumeGlobalStateProvider>{children}</ResumeGlobalStateProvider>
+        <AuthProvider session={session}>
+          <ResumeGlobalStateProvider>
+            <AuthStateLoader />
+            {children}
+          </ResumeGlobalStateProvider>
+        </AuthProvider>
       </body>
     </html>
   );

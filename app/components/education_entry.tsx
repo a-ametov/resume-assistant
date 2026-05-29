@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SerializedEducationEntryState } from "../state/resume_position_state";
+import type { SerializedEducationEntryState } from "../state/app_state";
 import { useResumeGlobalState } from "./resume_global_state";
 
 export default function EducationEntry({

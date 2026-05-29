@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SerializedEducationEntryState } from "../state/resume_position_state";
+import type { SerializedEducationEntryState } from "../state/app_state";
 import EducationEntry from "./education_entry";
 import { useResumeGlobalState } from "./resume_global_state";
 
@@ -15,24 +15,24 @@ export default function EducationEntries() {
     registerEducationEntry,
     updateEducationEntry,
     loadStateRevision,
-    loadedSerializedPositionState,
+    loadedSerializedAppState,
   } = useResumeGlobalState();
   const [educationItems, setEducationItems] = useState<EducationItem[]>([{ id: 1 }]);
   const [hiddenEducationIds, setHiddenEducationIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (!loadedSerializedPositionState) {
+    if (!loadedSerializedAppState) {
       return;
     }
 
     setEducationItems(
-      (loadedSerializedPositionState.educationEntries ?? []).map((education, index) => ({
+      (loadedSerializedAppState.educationEntries ?? []).map((education, index) => ({
         id: index + 1,
         initialData: education,
       })),
     );
     setHiddenEducationIds([]);
-  }, [loadStateRevision, loadedSerializedPositionState]);
+  }, [loadStateRevision, loadedSerializedAppState]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

@@ -15,7 +15,7 @@ export default function Skills() {
     registerSkillEntry,
     updateSkillEntry,
     loadStateRevision,
-    loadedSerializedPositionState,
+    loadedSerializedAppState,
   } = useResumeGlobalState();
   const [skillItems, setSkillItems] = useState<SkillItem[]>([{ id: 1, initialText: "" }]);
   const [skillTextById, setSkillTextById] = useState<Record<number, string>>({});
@@ -29,11 +29,11 @@ export default function Skills() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!loadedSerializedPositionState) {
+    if (!loadedSerializedAppState) {
       return;
     }
 
-    const loadedSkills = loadedSerializedPositionState.skills ?? [];
+    const loadedSkills = loadedSerializedAppState.skills ?? [];
 
     const timeoutId = setTimeout(() => {
       setSkillItems(
@@ -53,7 +53,7 @@ export default function Skills() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [loadStateRevision, loadedSerializedPositionState]);
+  }, [loadStateRevision, loadedSerializedAppState]);
 
   const visibleSkillItems = useMemo(
     () => skillItems.filter((skillItem) => !hiddenSkillIds.includes(skillItem.id)),
