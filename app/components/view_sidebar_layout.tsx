@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import CompanyEntries from "./company_entries";
+import BuildSuggestions from "./build_suggestions";
 import EducationEntries from "./education_entries";
 import PositionContext from "./position_context";
 import Profile from "./profile";
@@ -175,6 +176,7 @@ export default function ViewSidebarLayout() {
 
         <div className="flex w-full flex-col gap-6" hidden={activeView !== "application"}>
           <PositionContext />
+          <BuildSuggestions />
         </div>
       </div>
     </div>

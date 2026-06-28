@@ -1,5 +1,5 @@
-import { CheckRequest, ChangeRequest, CheckResult, ChangeResult, SkillsRequest, SkillsResult } from "../shared/types";
-import { createCheckExperiencePrompt, createCheckSummaryPrompt, createChangeExperiencePrompt, createChangeSummaryPrompt, createSkillsPrompt} from "./prompts";
+import { BuildRequest, BuildResult, CheckRequest, ChangeRequest, CheckResult, ChangeResult, SkillsRequest, SkillsResult } from "../shared/types";
+import { createBuildPrompt, createCheckExperiencePrompt, createCheckSummaryPrompt, createChangeExperiencePrompt, createChangeSummaryPrompt, createSkillsPrompt } from "./prompts";
 
 type GeminiGenerateContentResponse = {
   candidates?: Array<{
@@ -108,6 +108,83 @@ export default class GeminiClient {
     }
 
     throw new Error("Gemini skills response could not be parsed.");
+  }
+
+  public async build(req: BuildRequest): Promise<BuildResult> {
+    const prompt = createBuildPrompt(req);
+
+    const raw = await this.sendRequest(prompt);
+    const parsed = this.parseJsonObject(raw) as Partial<BuildResult> | null;
+
+    if (parsed && typeof parsed === "object") {
+      const summarySuggestions = Array.isArray(parsed.summarySuggestions)
+        ? parsed.summarySuggestions
+            .map((entry) => ({
+              original: String(entry?.original ?? "").trim(),
+              suggestion: String(entry?.suggestion ?? "").trim(),
+            }))
+            .filter((entry) => entry.original.length > 0 || entry.suggestion.length > 0)
+        : [];
+
+      const rawSkillsSuggestions =
+        parsed.skillsSuggestions && typeof parsed.skillsSuggestions === "object"
+          ? (parsed.skillsSuggestions as Partial<BuildResult["skillsSuggestions"]>)
+          : ({} as Partial<BuildResult["skillsSuggestions"]>);
+
+      const skillsSuggestions = {
+        originalSkills: Array.isArray(rawSkillsSuggestions.originalSkills)
+            ? rawSkillsSuggestions.originalSkills
+              .map((skill: string) => String(skill).trim())
+              .filter((skill) => skill.length > 0)
+          : [],
+        suggestedSkills: Array.isArray(rawSkillsSuggestions.suggestedSkills)
+            ? rawSkillsSuggestions.suggestedSkills
+              .map((skill: string) => String(skill).trim())
+              .filter((skill) => skill.length > 0)
+          : [],
+      };
+
+      const experienceSuggestions = Array.isArray(parsed.experienceSuggestions)
+        ? parsed.experienceSuggestions.map((entry) => ({
+            companyName: String(entry?.companyName ?? "").trim(),
+            originalEntries: Array.isArray(entry?.originalEntries)
+              ? entry.originalEntries
+                  .map((item) => String(item).trim())
+                  .filter((item) => item.length > 0)
+              : [],
+            suggestedEntries: Array.isArray(entry?.suggestedEntries)
+              ? entry.suggestedEntries
+                  .map((item) => String(item).trim())
+                  .filter((item) => item.length > 0)
+              : [],
+          }))
+        : [];
+
+      const rawFeedback =
+        parsed.feedback && typeof parsed.feedback === "object"
+          ? (parsed.feedback as Partial<BuildResult["feedback"]>)
+          : ({} as Partial<BuildResult["feedback"]>);
+
+      const safeMatchRating = Math.min(10, Math.max(0, Number(rawFeedback.matchRating ?? 0)));
+
+      const feedback = {
+        matchRating: Number.isFinite(safeMatchRating) ? safeMatchRating : 0,
+        feedbackPoints: Array.isArray(rawFeedback.feedbackPoints)
+          ? rawFeedback.feedbackPoints
+              .map((point: string) => String(point).trim())
+              .filter((point) => point.length > 0)
+          : [],
+      };
+
+      return {
+        summarySuggestions,
+        skillsSuggestions,
+        experienceSuggestions,
+        feedback,
+      };
+    }
+
+    throw new Error("Gemini build response could not be parsed.");
   }
 
   private async sendRequest(prompt: string): Promise<string> {

@@ -193,112 +193,120 @@ export default function Skills() {
         </div>
       ) : null}
 
-      <div className="mt-3 flex w-full flex-col gap-2" hidden={isSectionCollapsed}>
-        {visibleSkillItems.map((skillItem) => (
-          <div key={`${loadStateRevision}-${skillItem.id}`} className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Skill"
-              value={skillTextById[skillItem.id] ?? skillItem.initialText}
-              onChange={(event) => {
-                const nextText = event.target.value;
-                setSkillTextById((prev) => ({
-                  ...prev,
-                  [skillItem.id]: nextText,
-                }));
-              }}
-              className={`h-10 flex-1 rounded-md border px-3 text-sm outline-none transition ${
-                skillStatusById.get(skillItem.id) === "irrelevant"
-                  ? "border-red-300 bg-red-50 text-red-900 focus:border-red-400 focus:ring-2 focus:ring-red-200"
-                  : skillStatusById.get(skillItem.id) === "relevant"
-                    ? "border-green-300 bg-green-50 text-green-900 focus:border-green-400 focus:ring-2 focus:ring-green-200"
-                    : "border-zinc-300 text-zinc-900 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
-              }`}
-            />
-            <button
-              type="button"
-              onClick={() => handleHideSkill(skillItem.id)}
-              aria-label="Hide skill"
-              className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M3 6h18" />
-                <path d="M8 6V4h8v2" />
-                <path d="M6 6l1 14h10l1-14" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-              </svg>
-            </button>
+      <div className="mt-3 w-full" hidden={isSectionCollapsed}>
+        {visibleSkillItems.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2">
+            {visibleSkillItems.map((skillItem) => (
+              <div key={`${loadStateRevision}-${skillItem.id}`} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Skill"
+                  value={skillTextById[skillItem.id] ?? skillItem.initialText}
+                  onChange={(event) => {
+                    const nextText = event.target.value;
+                    setSkillTextById((prev) => ({
+                      ...prev,
+                      [skillItem.id]: nextText,
+                    }));
+                  }}
+                  className={`h-10 flex-1 rounded-md border px-3 text-sm outline-none transition ${
+                    skillStatusById.get(skillItem.id) === "irrelevant"
+                      ? "border-red-300 bg-red-50 text-red-900 focus:border-red-400 focus:ring-2 focus:ring-red-200"
+                      : skillStatusById.get(skillItem.id) === "relevant"
+                        ? "border-green-300 bg-green-50 text-green-900 focus:border-green-400 focus:ring-2 focus:ring-green-200"
+                        : "border-zinc-300 text-zinc-900 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleHideSkill(skillItem.id)}
+                  aria-label="Hide skill"
+                  className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M6 6l1 14h10l1-14" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        ) : null}
 
-        {phantomSuggestions.map((suggestion) => (
-          <div key={`phantom-${suggestion}`} className="flex items-center gap-2">
-            <input
-              type="text"
-              readOnly
-              value={suggestion}
-              className="h-10 flex-1 rounded-md border border-blue-300 bg-blue-50 px-3 text-sm text-blue-900 outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => handleAcceptPhantom(suggestion)}
-              aria-label={`Add ${suggestion} to skills`}
-              className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-300 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDismissPhantom(suggestion)}
-              aria-label={`Dismiss ${suggestion}`}
-              className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path d="M18 6 6 18" />
-                <path d="M6 6l12 12" />
-              </svg>
-            </button>
+        {phantomSuggestions.length > 0 ? (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {phantomSuggestions.map((suggestion) => (
+              <div key={`phantom-${suggestion}`} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={suggestion}
+                  className="h-10 flex-1 rounded-md border border-blue-300 bg-blue-50 px-3 text-sm text-blue-900 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAcceptPhantom(suggestion)}
+                  aria-label={`Add ${suggestion} to skills`}
+                  className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-blue-300 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDismissPhantom(suggestion)}
+                  aria-label={`Dismiss ${suggestion}`}
+                  className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        ) : null}
 
         {visibleSkillItems.length === 0 && phantomSuggestions.length === 0 ? (
           <p className="text-sm text-zinc-500">No visible skills. Use Undo or add a new skill.</p>
         ) : null}
 
-        <div className="mt-2 flex justify-end">
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
             onClick={handleAddSkill}

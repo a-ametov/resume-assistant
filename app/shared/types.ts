@@ -41,6 +41,43 @@ export type SkillsRequest = {
   previousExperience: ConciseCompanyEntry[];
 };
 
+export type BuildRequest = {
+  targetCompany: string;
+  targetRole: string;
+  targetJobRequirements: string;
+  summary: string[];
+  listedSkills: string[];
+  previousExperience: ConciseCompanyEntry[];
+};
+
+export type BuildSummarySuggestion = {
+  original: string;
+  suggestion: string;
+};
+
+export type BuildSkillsSuggestion = {
+  originalSkills: string[];
+  suggestedSkills: string[];
+};
+
+export type BuildExperienceSuggestion = {
+  companyName: string;
+  originalEntries: string[];
+  suggestedEntries: string[];
+};
+
+export type BuildFeedback = {
+  matchRating: number;
+  feedbackPoints: string[];
+};
+
+export type BuildResult = {
+  summarySuggestions: BuildSummarySuggestion[];
+  skillsSuggestions: BuildSkillsSuggestion;
+  experienceSuggestions: BuildExperienceSuggestion[];
+  feedback: BuildFeedback;
+};
+
 export type SkillsResult = {
   rating: number;
   suggestedSkills: string[];

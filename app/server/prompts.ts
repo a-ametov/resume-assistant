@@ -1,4 +1,4 @@
-import type { ChangeRequest, CheckRequest, SkillsRequest } from "../shared/types";
+import type { BuildRequest, ChangeRequest, CheckRequest, SkillsRequest } from "../shared/types";
 
 const experienceBase = [
 	"You are evaluating a resume entry on a job application.",
@@ -66,24 +66,6 @@ const changeBase = [
 	'{"recommendation": "<rewritten text>", "reasoning": "<brief reasoning>", "recommendationRating": <number 0-10>}',
 ].join("\n");
 
-function stringifyTemplateValue(value: string | number | string[]): string {
-	if (Array.isArray(value)) {
-		return value.filter((entry) => entry.trim().length > 0).join("\n");
-	}
-
-	return String(value);
-}
-
-function fillTemplate(template: string, values: Record<string, string | number | string[]>): string {
-	let result = template;
-
-	for (const [key, value] of Object.entries(values)) {
-		result = result.replaceAll(`{{${key}}}`, stringifyTemplateValue(value));
-	}
-
-	return result;
-}
-
 const checkSummaryTemplate = [
 	summaryBase,
 	"",
@@ -135,6 +117,66 @@ const skillsTemplate = [
 	"{'rating': <number 0-10>, 'suggestedSkills': [<list of suggested skills>], 'irrelevantSkills': [<list of irrelevant skills>], 'reasoning': '<brief reasoning>'}'",
 ].join("\n");
 
+const builderTemplate = [
+	"You are building a resume for a job application.",
+	"",
+	"The candidate is applying for a job at {{targetCompany}} as a {{targetRole}}",
+	"The job requirements are listed as {{targetJobRequirements}}",
+	"",
+	"The following is a summary of the candidate:",
+	"{{summary}}",
+	"",
+	"The following are the candidate's skills:",
+	"{{listedSkills}}",
+	"",
+	"The following are the candidate's previous work experiences:",
+	"{{previousExperience}}",
+	"",
+	"Your task:",
+	"- Choose 3-4 of the candidate's summary statements that are most relevant to the job requirements.",
+	"- The chosen summary statements should cover as many of the job requirements as possible.",
+	"- For each chosen summary statement, suggest a slight tweak to better align with the job requirements.",
+	"- Choose 8-12 of the candidate's skills that are most relevant to the job requirements.",
+	"- Suggest 3-5 skills the candidate has not listed that are relevant to the job requirements.",
+	"- Optimize skill choices to best match an ATS (Applicant Tracking System) scan of the job description.",
+	"- For each of the candidate's previous work experiences, choose 4-5 entries that are most relevant to the job requirements.",
+	"- For each chosen experience entry, suggest a slight tweak to better align with the job requirements.",
+	"- Give an overall match rating from 0 to 10 based on how well the candidate fits the role.",
+	"- Provide up to 5 points of feedback on areas where the candidate falls short of the job requirements and how they can improve.",
+	"- Return ONLY valid JSON with this exact shape:",
+	"{",
+	"\t'summarySuggestions': [{'original': '<original summary statement>', 'suggestion': '<tweaked summary statement>'}],",
+	"\t'skillsSuggestions': {'originalSkills': [<list of original skills>], 'suggestedSkills': [<list of suggested skills>]},",
+	"\t'experienceSuggestions': [{",
+	"\t\t'companyName': '<company name>',",
+	"\t\t'originalEntries': [<list of original experience entries>],",
+	"\t\t'suggestedEntries': [<list of suggested experience entries>]",
+	"\t}]",
+	"\t'feedback': {",
+	"\t\t'matchRating': <number 0-10>,",
+	"\t\t'feedbackPoints': [<list of feedback points>]",
+	"\t}",
+	"}",
+].join("\n");
+
+function stringifyTemplateValue(value: string | number | string[]): string {
+	if (Array.isArray(value)) {
+		return value.filter((entry) => entry.trim().length > 0).join("\n");
+	}
+
+	return String(value);
+}
+
+function fillTemplate(template: string, values: Record<string, string | number | string[]>): string {
+	let result = template;
+
+	for (const [key, value] of Object.entries(values)) {
+		result = result.replaceAll(`{{${key}}}`, stringifyTemplateValue(value));
+	}
+
+	return result;
+}
+
 export function createCheckExperiencePrompt(req: CheckRequest): string {
 	return fillTemplate(checkExperienceTemplate, req);
 }
@@ -167,6 +209,17 @@ export function createSkillsPrompt(req: SkillsRequest): string {
 	return fillTemplate(skillsTemplate, {
 		...req,
 		listedSkills: req.listedSkills.join("\n"),
+		previousExperience: req.previousExperience
+			.map((experience) => `${experience.companyName}:\n\t* ${experience.experience.join("\n\t* ")}`)
+			.join("\n\n"),
+	});
+}
+
+export function createBuildPrompt(req: BuildRequest): string {
+	return fillTemplate(builderTemplate, {
+		...req,
+		summary: req.summary.map((entry) => `\t* ${entry}`).join("\n"),
+		listedSkills: req.listedSkills.map((skill) => `\t* ${skill}`).join("\n"),
 		previousExperience: req.previousExperience
 			.map((experience) => `${experience.companyName}:\n\t* ${experience.experience.join("\n\t* ")}`)
 			.join("\n\n"),
