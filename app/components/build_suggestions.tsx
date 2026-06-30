@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import BackendClient from "../client/backend_client";
+import type { BuildSelections } from "../client/build_suggestions_storage";
 import { formatMonthToIsoDate, parseYear } from "../shared/date_format";
 import type { BuildResult, ExportRequest } from "../shared/types";
 import { serializeAppState } from "../state/app_state";
@@ -26,11 +27,6 @@ type SaveFilePickerWindow = Window & {
     }>;
   }) => Promise<FileSystemFileHandleLike>;
 };
-
-const BUILD_RESULT_STORAGE_KEY = "resumeAssistant.buildSuggestions.result";
-const SUMMARY_SELECTIONS_STORAGE_KEY = "resumeAssistant.buildSuggestions.summarySelections";
-const EXPERIENCE_SELECTIONS_STORAGE_KEY = "resumeAssistant.buildSuggestions.experienceSelections";
-const SKILLS_SELECTIONS_STORAGE_KEY = "resumeAssistant.buildSuggestions.skillsSelections";
 
 function defaultSummarySelections(result: BuildResult): Record<number, "original" | "suggested"> {
   return result.summarySuggestions.reduce<Record<number, "original" | "suggested">>(
@@ -100,7 +96,19 @@ function normalizeCompanyName(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export default function BuildSuggestions() {
+type BuildSuggestionsProps = {
+  applicationKey: string;
+  initialBuildResult: BuildResult | null;
+  initialSelections: BuildSelections | null;
+  onPersist: (result: BuildResult, selections: BuildSelections) => void;
+};
+
+export default function BuildSuggestions({
+  applicationKey,
+  initialBuildResult,
+  initialSelections,
+  onPersist,
+}: BuildSuggestionsProps) {
   const backendClient = BackendClient.getInstance();
   const { appState, markSavedClean, loadSerializedAppState } = useResumeGlobalState();
   const [isBuilding, setIsBuilding] = useState(false);
@@ -118,78 +126,25 @@ export default function BuildSuggestions() {
   const [selectedSuggestedSkills, setSelectedSuggestedSkills] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    try {
-      const cached = window.localStorage.getItem(BUILD_RESULT_STORAGE_KEY);
-      if (!cached) {
-        return;
-      }
-
-      const parsed = JSON.parse(cached) as BuildResult;
-      setBuildResult(parsed);
-
-      // Try to load each selection independently
-      const cachedSummary = window.localStorage.getItem(SUMMARY_SELECTIONS_STORAGE_KEY);
-      try {
-        setSelectedSummaryOptions(
-          cachedSummary ? JSON.parse(cachedSummary) : defaultSummarySelections(parsed),
-        );
-      } catch {
-        setSelectedSummaryOptions(defaultSummarySelections(parsed));
-        window.localStorage.removeItem(SUMMARY_SELECTIONS_STORAGE_KEY);
-      }
-
-      const cachedExperience = window.localStorage.getItem(EXPERIENCE_SELECTIONS_STORAGE_KEY);
-      try {
-        setSelectedExperienceOptions(
-          cachedExperience ? JSON.parse(cachedExperience) : defaultExperienceSelections(parsed),
-        );
-      } catch {
-        setSelectedExperienceOptions(defaultExperienceSelections(parsed));
-        window.localStorage.removeItem(EXPERIENCE_SELECTIONS_STORAGE_KEY);
-      }
-
-      const cachedSkills = window.localStorage.getItem(SKILLS_SELECTIONS_STORAGE_KEY);
-      try {
-        setSelectedSuggestedSkills(
-          cachedSkills ? JSON.parse(cachedSkills) : defaultSuggestedSkillSelections(parsed),
-        );
-      } catch {
-        setSelectedSuggestedSkills(defaultSuggestedSkillSelections(parsed));
-        window.localStorage.removeItem(SKILLS_SELECTIONS_STORAGE_KEY);
-      }
-    } catch {
-      window.localStorage.removeItem(BUILD_RESULT_STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!buildResult) {
+    if (!applicationKey || !initialBuildResult) {
+      setBuildResult(null);
+      setSelectedSummaryOptions({});
+      setSelectedExperienceOptions({});
+      setSelectedSuggestedSkills({});
       return;
     }
 
-    window.localStorage.setItem(BUILD_RESULT_STORAGE_KEY, JSON.stringify(buildResult));
-  }, [buildResult]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      SUMMARY_SELECTIONS_STORAGE_KEY,
-      JSON.stringify(selectedSummaryOptions),
+    setBuildResult(initialBuildResult);
+    setSelectedSummaryOptions(
+      initialSelections?.selectedSummaryOptions ?? defaultSummarySelections(initialBuildResult),
     );
-  }, [selectedSummaryOptions]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      EXPERIENCE_SELECTIONS_STORAGE_KEY,
-      JSON.stringify(selectedExperienceOptions),
+    setSelectedExperienceOptions(
+      initialSelections?.selectedExperienceOptions ?? defaultExperienceSelections(initialBuildResult),
     );
-  }, [selectedExperienceOptions]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      SKILLS_SELECTIONS_STORAGE_KEY,
-      JSON.stringify(selectedSuggestedSkills),
+    setSelectedSuggestedSkills(
+      initialSelections?.selectedSuggestedSkills ?? defaultSuggestedSkillSelections(initialBuildResult),
     );
-  }, [selectedSuggestedSkills]);
+  }, [applicationKey, initialBuildResult, initialSelections]);
 
   const handleBuild = async () => {
     setBuildError("");
@@ -198,10 +153,17 @@ export default function BuildSuggestions() {
 
     try {
       const result = await backendClient.build();
+      const defaultSelections = {
+        selectedSummaryOptions: defaultSummarySelections(result),
+        selectedExperienceOptions: defaultExperienceSelections(result),
+        selectedSuggestedSkills: defaultSuggestedSkillSelections(result),
+      };
+
       setBuildResult(result);
-      setSelectedSummaryOptions(defaultSummarySelections(result));
-      setSelectedExperienceOptions(defaultExperienceSelections(result));
-      setSelectedSuggestedSkills(defaultSuggestedSkillSelections(result));
+      setSelectedSummaryOptions(defaultSelections.selectedSummaryOptions);
+      setSelectedExperienceOptions(defaultSelections.selectedExperienceOptions);
+      setSelectedSuggestedSkills(defaultSelections.selectedSuggestedSkills);
+      onPersist(result, defaultSelections);
     } catch (caughtError) {
       setBuildError(
         caughtError instanceof Error
@@ -362,6 +324,12 @@ export default function BuildSuggestions() {
             to: parseYear(education.toDate),
           })),
       };
+
+      onPersist(buildResult, {
+        selectedSummaryOptions,
+        selectedExperienceOptions,
+        selectedSuggestedSkills,
+      });
 
       void persistSelectedSkillsToAppState(selectedSuggestedSkillsList).catch((error) => {
         console.error("Failed to persist selected suggested skills", error);

@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import CompanyEntries from "./company_entries";
-import BuildSuggestions from "./build_suggestions";
+import ApplicationBuilder from "./application_builder";
 import EducationEntries from "./education_entries";
-import PositionContext from "./position_context";
 import Profile from "./profile";
 import Skills from "./skills";
 import Summary from "./summary";
@@ -135,7 +134,7 @@ export default function ViewSidebarLayout() {
           <ViewButton
             active={activeView === "application"}
             onClick={() => setActiveView("application")}
-            label="Application"
+            label="Applications"
             icon={
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -175,8 +174,7 @@ export default function ViewSidebarLayout() {
         </div>
 
         <div className="flex w-full flex-col gap-6" hidden={activeView !== "application"}>
-          <PositionContext />
-          <BuildSuggestions />
+          <ApplicationBuilder />
         </div>
       </div>
     </div>

@@ -71,6 +71,12 @@ export type BuildFeedback = {
   feedbackPoints: string[];
 };
 
+export type ApplicationContext = {
+  company: string;
+  title: string;
+  description: string;
+};
+
 export type BuildResult = {
   summarySuggestions: BuildSummarySuggestion[];
   skillsSuggestions: BuildSkillsSuggestion;

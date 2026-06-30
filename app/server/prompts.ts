@@ -136,7 +136,7 @@ const builderTemplate = [
 	"- Choose 3-4 of the candidate's summary statements that are most relevant to the job requirements.",
 	"- The chosen summary statements should cover as many of the job requirements as possible.",
 	"- For each chosen summary statement, suggest a slight tweak to better align with the job requirements.",
-	"- Choose 8-12 of the candidate's skills that are most relevant to the job requirements.",
+	"- Choose 10-15 of the candidate's skills that are most relevant to the job requirements.",
 	"- Suggest 3-5 skills the candidate has not listed that are relevant to the job requirements.",
 	"- Optimize skill choices to best match an ATS (Applicant Tracking System) scan of the job description.",
 	"- For each of the candidate's previous work experiences, choose 4-5 entries that are most relevant to the job requirements.",
