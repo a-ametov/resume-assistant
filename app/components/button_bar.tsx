@@ -266,7 +266,7 @@ export default function ButtonBar() {
           title="Import"
           aria-label="Import"
           onClick={handleLoadClick}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200"
+          className="hidden h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -291,7 +291,7 @@ export default function ButtonBar() {
           aria-label="Export"
           onClick={handleExportState}
           disabled={isExportingState}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+          className="hidden h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -316,7 +316,7 @@ export default function ButtonBar() {
           aria-label="Generate"
           onClick={handleExport}
           disabled={isExporting}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
+          className="hidden h-10 w-10 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

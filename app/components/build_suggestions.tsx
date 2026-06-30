@@ -96,6 +96,31 @@ function normalizeCompanyName(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function sanitizeFileNamePart(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildDefaultExportFileName(fullName: string, company: string, fallbackFileName: string): string {
+  const normalizedFallback = fallbackFileName.toLowerCase().endsWith(".pdf")
+    ? fallbackFileName
+    : `${fallbackFileName}.pdf`;
+
+  const nameParts = fullName
+    .trim()
+    .split(/\s+/)
+    .map(sanitizeFileNamePart)
+    .filter((part) => part.length > 0);
+
+  const fileParts = [nameParts[0] ?? "", nameParts.length > 1 ? nameParts[nameParts.length - 1] : "", sanitizeFileNamePart(company)]
+    .filter((part) => part.length > 0);
+
+  return fileParts.length > 0 ? `${fileParts.join("-")}.pdf` : normalizedFallback;
+}
+
 type BuildSuggestionsProps = {
   applicationKey: string;
   initialBuildResult: BuildResult | null;
@@ -337,9 +362,11 @@ export default function BuildSuggestions({
 
       const result = await backendClient.exportPdfWithRequest(requestBody);
       const pickerWindow = window as SaveFilePickerWindow;
-      const defaultName = result.fileName.toLowerCase().endsWith(".pdf")
-        ? result.fileName
-        : `${result.fileName}.pdf`;
+      const defaultName = buildDefaultExportFileName(
+        appState.profile.name,
+        appState.company,
+        result.fileName,
+      );
 
       if (pickerWindow.showSaveFilePicker) {
         const fileHandle = await pickerWindow.showSaveFilePicker({
