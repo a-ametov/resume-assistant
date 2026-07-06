@@ -1,6 +1,58 @@
 import { NextResponse } from "next/server";
 import type { BuildRequest, CheckRequest, ChangeRequest, SkillsRequest } from "../shared/types";
 import GeminiClient from "../server/gemini_client";
+import { getStableIdentityKey } from "../server/auth_identity";
+import RedisClient from "../server/redis_client";
+
+const BUILD_LIMIT = 3;
+const CHECK_LIMIT = 5;
+const BUILD_SUFFIX = ':build';
+const CHECK_SUFFIX = ':check';
+const LOGIN_REQUIRED_ERROR = 'You must be logged in to use AI features';
+
+const enum LimitState {
+    Error = -1,
+    Exceeded = 0,
+    Good = 1,
+}
+
+// Module-private helper: allows increment only while the counter is below limit.
+async function withinLimit(key: string, limit: number): Promise<LimitState> {
+    // this is a hack
+    if (key.includes(':ametov.anton@gmail.com:')) {
+        return LimitState.Good;
+    }
+
+    const currentValue = await RedisClient.get(key);
+
+    if (currentValue < 0) {
+        return LimitState.Error;
+    }
+
+    if (currentValue >= limit) {
+        return LimitState.Exceeded;
+    }
+
+    const setResult = await RedisClient.set(key, currentValue + 1);
+    return setResult === 0 ? LimitState.Good : LimitState.Error;
+}
+
+function createLimitStateResponse(state: LimitState): Response | null {
+    if (state === LimitState.Error) {
+        return NextResponse.json({ error: "500: Unable to validate request limit." }, { status: 500 });
+    }
+
+    if (state === LimitState.Exceeded) {
+        return NextResponse.json({ error: "429: Request limit exceeded." }, { status: 429 });
+    }
+
+    return null;
+}
+
+async function createKey(suffix: string): Promise<string | null> {
+    const stableAuthKey = await getStableIdentityKey();
+    return stableAuthKey ? `${stableAuthKey}${suffix}` : null;
+}
 
 type EndpointErrorDetails = {
     status: number;
@@ -97,7 +149,7 @@ function parseErrorMessage(rawMessage: string, fallbackStatus = 500): EndpointEr
     };
 }
 
-export function getEndpointErrorDetails(error: unknown, fallbackMessage: string): EndpointErrorDetails {
+function getEndpointErrorDetails(error: unknown, fallbackMessage: string): EndpointErrorDetails {
     if (error instanceof Error) {
         const parsed = parseErrorMessage(error.message, 500);
         if (parsed?.message) {
@@ -128,6 +180,16 @@ export function createTextErrorResponse(error: unknown, fallbackMessage: string)
 
 export async function handleCheck(request: Request, isSummary: boolean) {
     try {
+        const key = await createKey(CHECK_SUFFIX);
+        if (!key) {
+            return NextResponse.json({ error: LOGIN_REQUIRED_ERROR }, { status: 401 });
+        }
+
+        const limitState = await withinLimit(key, CHECK_LIMIT);
+        if (limitState !== LimitState.Good) {
+            return createLimitStateResponse(limitState);
+        }
+
         const body = (await request.json()) as CheckRequest;
 
         const geminiClient = GeminiClient.getInstance();
@@ -142,6 +204,16 @@ export async function handleCheck(request: Request, isSummary: boolean) {
 
 export async function handleChange(request: Request, isSummary: boolean) {
     try {
+        const key = await createKey(CHECK_SUFFIX);
+        if (!key) {
+            return NextResponse.json({ error: LOGIN_REQUIRED_ERROR }, { status: 401 });
+        }
+
+        const limitState = await withinLimit(key, CHECK_LIMIT);
+        if (limitState !== LimitState.Good) {
+            return createLimitStateResponse(limitState);
+        }
+
         const body = (await request.json()) as ChangeRequest;
 
         const geminiClient = GeminiClient.getInstance();
@@ -155,6 +227,16 @@ export async function handleChange(request: Request, isSummary: boolean) {
 
 export async function handleSkills(request: Request) {
     try {
+        const key = await createKey(CHECK_SUFFIX);
+        if (!key) {
+            return NextResponse.json({ error: LOGIN_REQUIRED_ERROR }, { status: 401 });
+        }
+
+        const limitState = await withinLimit(key, CHECK_LIMIT);
+        if (limitState !== LimitState.Good) {
+            return createLimitStateResponse(limitState);
+        }
+
         const body = (await request.json()) as SkillsRequest;
 
         const geminiClient = GeminiClient.getInstance();
@@ -168,6 +250,16 @@ export async function handleSkills(request: Request) {
 
 export async function handleBuild(request: Request) {
     try {
+        const key = await createKey(BUILD_SUFFIX);
+        if (!key) {
+            return NextResponse.json({ error: LOGIN_REQUIRED_ERROR }, { status: 401 });
+        }
+
+        const limitState = await withinLimit(key, BUILD_LIMIT);
+        if (limitState !== LimitState.Good) {
+            return createLimitStateResponse(limitState);
+        }
+
         const body = (await request.json()) as BuildRequest;
 
         const geminiClient = GeminiClient.getInstance();
