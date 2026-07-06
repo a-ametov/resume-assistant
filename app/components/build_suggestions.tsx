@@ -160,6 +160,65 @@ export default function BuildSuggestions({
   const [editedExperienceSuggestions, setEditedExperienceSuggestions] = useState<string[][]>([]);
   const [selectedSuggestedSkills, setSelectedSuggestedSkills] = useState<Record<number, boolean>>({});
 
+  const handleSummarySuggestionTextChange = (index: number, value: string) => {
+    if (!buildResult) {
+      return;
+    }
+
+    setEditedSummarySuggestions((previous) => {
+      const next = [...previous];
+      next[index] = value;
+      return next;
+    });
+
+    const nextBuildResult: BuildResult = {
+      ...buildResult,
+      summarySuggestions: buildResult.summarySuggestions.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, suggestion: value } : entry,
+      ),
+    };
+
+    setBuildResult(nextBuildResult);
+  };
+
+  const handleExperienceSuggestionTextChange = (companyIndex: number, entryIndex: number, value: string) => {
+    if (!buildResult) {
+      return;
+    }
+
+    setEditedExperienceSuggestions((previous) => {
+      const next = previous.map((companyItems, companyItemIndex) =>
+        companyItemIndex === companyIndex ? [...companyItems] : companyItems,
+      );
+
+      if (!next[companyIndex]) {
+        next[companyIndex] = [];
+      }
+
+      next[companyIndex][entryIndex] = value;
+      return next;
+    });
+
+    const nextBuildResult: BuildResult = {
+      ...buildResult,
+      experienceSuggestions: buildResult.experienceSuggestions.map((company, currentCompanyIndex) => {
+        if (currentCompanyIndex !== companyIndex) {
+          return company;
+        }
+
+        const nextSuggestedEntries = [...company.suggestedEntries];
+        nextSuggestedEntries[entryIndex] = value;
+
+        return {
+          ...company,
+          suggestedEntries: nextSuggestedEntries,
+        };
+      }),
+    };
+
+    setBuildResult(nextBuildResult);
+  };
+
   useEffect(() => {
     if (!applicationKey || !initialBuildResult) {
       setBuildResult(null);
@@ -512,13 +571,7 @@ export default function BuildSuggestions({
                         }
                         originalText={entry.original}
                         suggestionText={editedSummarySuggestions[index] ?? entry.suggestion}
-                        onSuggestionTextChange={(value) =>
-                          setEditedSummarySuggestions((previous) => {
-                            const next = [...previous];
-                            next[index] = value;
-                            return next;
-                          })
-                        }
+                        onSuggestionTextChange={(value) => handleSummarySuggestionTextChange(index, value)}
                       />
                     </div>
                   ))}
@@ -617,18 +670,7 @@ export default function BuildSuggestions({
                                   (pair.suggested || "No suggested entry")
                                 }
                                 onSuggestionTextChange={(value) =>
-                                  setEditedExperienceSuggestions((previous) => {
-                                    const next = previous.map((companyItems, companyItemIndex) =>
-                                      companyItemIndex === companyIndex ? [...companyItems] : companyItems,
-                                    );
-
-                                    if (!next[companyIndex]) {
-                                      next[companyIndex] = [];
-                                    }
-
-                                    next[companyIndex][entryIndex] = value;
-                                    return next;
-                                  })
+                                  handleExperienceSuggestionTextChange(companyIndex, entryIndex, value)
                                 }
                               />
                             </div>
