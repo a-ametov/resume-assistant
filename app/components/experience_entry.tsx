@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import BackendClient from "../client/backend_client";
 import type { ExperienceEntryState } from "../state/app_state";
+import { useResumeGlobalState } from "./resume_global_state";
 
 type ExperienceEntryProps = {
   companyId: number;
@@ -25,13 +26,13 @@ export default function ExperienceEntry({
 }: ExperienceEntryProps) {
   const initialRecommendation = "Recommendation will appear here.";
   const backendClient = BackendClient.getInstance();
+  const { addGlobalError } = useResumeGlobalState();
   const inputId = `${useId()}-${companyId}-${entryId}`;
   const [text, setText] = useState(initialText);
   const [rating, setRating] = useState<number | null>(null);
   const [recommendationRating, setRecommendationRating] = useState<number | null>(null);
   const [recommendation, setRecommendation] = useState(initialRecommendation);
   const [reasoning, setReasoning] = useState("");
-  const [error, setError] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -44,12 +45,26 @@ export default function ExperienceEntry({
   const isBusy = isChecking || isUpdating;
   const onStateChangeRef = useRef(onStateChange);
 
+  const checkDisabledReason = !hasText
+    ? "Please enter text before checking."
+    : isBusy
+      ? "Please wait for the current action to finish."
+      : "";
+
+  const updateDisabledReason = !hasText
+    ? "Please enter text before updating."
+    : !hasRecommendation
+      ? "Run Check first to generate a rewrite."
+      : isBusy
+        ? "Please wait for the current action to finish."
+        : "";
+
   const commitStateNow = (patch: Partial<Omit<ExperienceEntryState, "entryId">> = {}) => {
     onStateChangeRef.current({
       text,
       rating,
       recommendation,
-      error,
+      error: "",
       isChecking,
       isUpdating,
       hidden,
@@ -67,7 +82,7 @@ export default function ExperienceEntry({
         text,
         rating,
         recommendation,
-        error,
+        error: "",
         isChecking,
         isUpdating,
         hidden,
@@ -77,39 +92,11 @@ export default function ExperienceEntry({
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [text, rating, recommendation, error, isChecking, isUpdating, hidden]);
+  }, [text, rating, recommendation, isChecking, isUpdating, hidden]);
 
   const recommendationClass = hasRecommendation
     ? "border-emerald-200 bg-emerald-50 text-emerald-800"
     : "border-zinc-300 bg-zinc-50 text-zinc-700";
-
-  const extractErrorDetails = (caughtError: unknown) => {
-    const message = caughtError instanceof Error ? caughtError.message : "";
-    const statusMatch = message.match(/\b(\d{3})\b/);
-    const code = statusMatch?.[1] ?? "unknown";
-
-    const afterCode = statusMatch
-      ? message.slice((statusMatch.index ?? 0) + statusMatch[0].length).trim()
-      : message.trim();
-
-    let codeMessage = afterCode || "No additional details";
-
-    try {
-      const parsed = JSON.parse(afterCode) as {
-        error?: { message?: string };
-        message?: string;
-      };
-
-      codeMessage =
-        parsed.error?.message?.trim() ||
-        parsed.message?.trim() ||
-        codeMessage;
-    } catch {
-      // Keep the plain string when payload is not JSON.
-    }
-
-    return { code, codeMessage };
-  };
 
   const ratingColorClass =
     rating === null
@@ -135,11 +122,9 @@ export default function ExperienceEntry({
 
   const handleCheck = async () => {
     if (!trimmedText) {
-      setError("Please enter text before checking.");
       return;
     }
 
-    setError("");
     setIsChecking(true);
 
     try {
@@ -156,11 +141,13 @@ export default function ExperienceEntry({
         isChecking: false,
       });
     } catch (caughtError) {
-      const { code, codeMessage } = extractErrorDetails(caughtError);
-      const nextError = `Unable to check text right now. (Code: ${code}, Message: ${codeMessage})`;
-      setError(nextError);
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to check text right now.";
+      addGlobalError(nextError);
       commitStateNow({
-        error: nextError,
+        error: "",
         isChecking: false,
       });
     } finally {
@@ -170,16 +157,13 @@ export default function ExperienceEntry({
 
   const handleUpdate = async () => {
     if (!trimmedText) {
-      setError("Please enter text before updating.");
       return;
     }
 
     if (!hasRecommendation) {
-      setError("Run Check first to generate a rewrite.");
       return;
     }
 
-    setError("");
     setIsUpdating(true);
 
     try {
@@ -202,11 +186,13 @@ export default function ExperienceEntry({
         isUpdating: false,
       });
     } catch (caughtError) {
-      const { code, codeMessage } = extractErrorDetails(caughtError);
-      const nextError = `Unable to update recommendation right now. (Code: ${code}, Message: ${codeMessage})`;
-      setError(nextError);
+      const nextError =
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to update recommendation right now.";
+      addGlobalError(nextError);
       commitStateNow({
-        error: nextError,
+        error: "",
         isUpdating: false,
       });
     } finally {
@@ -232,6 +218,7 @@ export default function ExperienceEntry({
             type="button"
             onClick={handleCheck}
             disabled={!hasText || isBusy}
+            title={checkDisabledReason || "Check"}
             className="h-10 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:border disabled:border-zinc-300 disabled:bg-zinc-200 disabled:text-zinc-500"
           >
             {isChecking ? "Checking..." : "Check"}
@@ -260,7 +247,7 @@ export default function ExperienceEntry({
                   disabled={!hasText || !hasRecommendation || isBusy}
                   className="flex h-10 flex-1 items-center justify-center rounded-md border border-red-200 bg-red-100 px-2 py-2 text-sm font-medium text-red-700 transition hover:bg-red-200 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-200 disabled:text-zinc-500"
                   aria-label="Regenerate recommendation"
-                  title={isUpdating ? "Regenerating..." : "Regenerate"}
+                  title={updateDisabledReason || (isUpdating ? "Regenerating..." : "Regenerate")}
                 >
                   {isUpdating ? (
                     <span className="text-xs">...</span>
@@ -322,14 +309,6 @@ export default function ExperienceEntry({
             className="w-full min-h-[88px] resize-none rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 outline-none"
           />
         </>
-      ) : null}
-      {error ? (
-        <p
-          className="w-full max-w-full cursor-help overflow-hidden text-ellipsis whitespace-nowrap text-sm text-red-600"
-          title={error}
-        >
-          {error}
-        </p>
       ) : null}
     </div>
   );

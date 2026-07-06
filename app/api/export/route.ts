@@ -1,4 +1,5 @@
 import type { ExportRequest } from "../../shared/types";
+import { createTextErrorResponse } from "../common";
 import { exportResumeToPdfBytes } from "../../server/pdf_exporter";
 
 function sanitizeFileBaseName(value: string): string {
@@ -29,12 +30,6 @@ export async function POST(request: Request) {
 			},
 		});
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unable to export PDF.";
-		return new Response(message, {
-			status: 500,
-			headers: {
-				"Content-Type": "text/plain; charset=utf-8",
-			},
-		});
+		return createTextErrorResponse(error, "Unable to export PDF.");
 	}
 }

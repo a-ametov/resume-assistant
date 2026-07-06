@@ -25,6 +25,15 @@ import {
   setAppState,
 } from "../state/app_state";
 
+const GLOBAL_ERROR_DURATION_MS = 12_000;
+
+export type GlobalErrorNotice = {
+  id: string;
+  message: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
 type ResumeGlobalStateValue = {
   company: string;
   setCompany: (value: string) => void;
@@ -77,6 +86,10 @@ type ResumeGlobalStateValue = {
     entryId: number,
     hidden: boolean,
   ) => void;
+  globalErrors: GlobalErrorNotice[];
+  addGlobalError: (message: string) => void;
+  clearGlobalError: (errorId: string) => void;
+  clearAllGlobalErrors: () => void;
 };
 
 const ResumeGlobalStateContext = createContext<ResumeGlobalStateValue | null>(
@@ -171,6 +184,38 @@ export function ResumeGlobalStateProvider({
   const [loadStateRevision, setLoadStateRevision] = useState(0);
   const [loadedSerializedAppState, setLoadedSerializedAppState] =
     useState<SerializedAppState | null>(null);
+  const [globalErrors, setGlobalErrors] = useState<GlobalErrorNotice[]>([]);
+  const nextGlobalErrorId = useRef(1);
+
+  const clearGlobalError = useCallback((errorId: string) => {
+    setGlobalErrors((prev) => prev.filter((error) => error.id !== errorId));
+  }, []);
+
+  const clearAllGlobalErrors = useCallback(() => {
+    setGlobalErrors([]);
+  }, []);
+
+  const addGlobalError = useCallback((message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setGlobalErrors((prev) => {
+      const now = Date.now();
+      const activeErrors = prev.filter((error) => error.expiresAt > now);
+      const errorId = `global-error-${nextGlobalErrorId.current++}`;
+      return [
+        ...activeErrors,
+        {
+          id: errorId,
+          message: trimmed,
+          createdAt: now,
+          expiresAt: now + GLOBAL_ERROR_DURATION_MS,
+        },
+      ];
+    });
+  }, []);
 
   const loadSerializedAppState = useCallback(
     (data: unknown): data is SerializedAppState => {
@@ -211,6 +256,21 @@ export function ResumeGlobalStateProvider({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (globalErrors.length === 0) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      setGlobalErrors((prev) => prev.filter((error) => error.expiresAt > now));
+    }, 500);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [globalErrors.length]);
 
   const registerEducationEntry = useCallback((educationId: number) => {
     setEducationEntries((prev) => {
@@ -568,6 +628,10 @@ export function ResumeGlobalStateProvider({
       registerExperienceEntry,
       updateExperienceEntry,
       setExperienceHidden,
+      globalErrors,
+      addGlobalError,
+      clearGlobalError,
+      clearAllGlobalErrors,
     }),
     [
       company,
@@ -588,6 +652,10 @@ export function ResumeGlobalStateProvider({
       registerExperienceEntry,
       updateExperienceEntry,
       setExperienceHidden,
+      globalErrors,
+      addGlobalError,
+      clearGlobalError,
+      clearAllGlobalErrors,
       registerSummaryEntry,
       updateSummaryEntry,
       setSummaryEntryHidden,

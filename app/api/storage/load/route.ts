@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createJsonErrorResponse } from "../../common";
 import { getStableIdentityKey } from "../../../server/auth_identity";
 import MongoDbClient from "../../../server/mongodb_client";
 
@@ -16,7 +17,6 @@ export async function GET() {
 
     return NextResponse.json(appState, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to load state.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return createJsonErrorResponse(error, "Unable to load state.");
   }
 }

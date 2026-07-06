@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import AuthProvider from "./components/auth_provider";
 import AuthStateLoader from "./components/auth_state_loader";
+import GlobalErrorStack from "./components/global_error_stack";
 import { ResumeGlobalStateProvider } from "./components/resume_global_state";
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default async function RootLayout({
         <AuthProvider session={session}>
           <ResumeGlobalStateProvider>
             <AuthStateLoader />
+            <GlobalErrorStack />
             {children}
           </ResumeGlobalStateProvider>
         </AuthProvider>

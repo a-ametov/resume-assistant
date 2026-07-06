@@ -16,6 +16,7 @@ export default function Skills() {
     updateSkillEntry,
     loadStateRevision,
     loadedSerializedAppState,
+    addGlobalError,
   } = useResumeGlobalState();
   const [skillItems, setSkillItems] = useState<SkillItem[]>([{ id: 1, initialText: "" }]);
   const [skillTextById, setSkillTextById] = useState<Record<number, string>>({});
@@ -26,7 +27,6 @@ export default function Skills() {
   const [suggestedSkills, setSuggestedSkills] = useState<string[]>([]);
   const [irrelevantSkills, setIrrelevantSkills] = useState<string[]>([]);
   const [reasoning, setReasoning] = useState("");
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!loadedSerializedAppState) {
@@ -47,7 +47,6 @@ export default function Skills() {
       setSuggestedSkills([]);
       setIrrelevantSkills([]);
       setReasoning("");
-      setError("");
     }, 0);
 
     return () => {
@@ -123,11 +122,9 @@ export default function Skills() {
 
   const handleCheckSkills = async () => {
     if (currentVisibleSkills.length === 0) {
-      setError("Please add at least one skill before checking.");
       return;
     }
 
-    setError("");
     setIsChecking(true);
 
     try {
@@ -138,7 +135,7 @@ export default function Skills() {
       setReasoning(result.reasoning);
     } catch (caughtError) {
       setReasoning("");
-      setError(
+      addGlobalError(
         caughtError instanceof Error
           ? caughtError.message
           : "Unable to check skills right now.",
@@ -163,6 +160,12 @@ export default function Skills() {
     currentVisibleSkills.length > 0
       ? `${currentVisibleSkills.length} skills listed`
       : "No skills listed";
+
+  const checkSkillsDisabledReason = isChecking
+    ? "Checking skills..."
+    : currentVisibleSkills.length === 0
+      ? "Please add at least one skill before checking."
+      : "";
 
   return (
     <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -326,13 +329,7 @@ export default function Skills() {
             </span>
           </div>
 
-          {error ? (
-            <p className="mt-2 text-sm text-red-600" role="status" aria-live="polite">
-              {error}
-            </p>
-          ) : null}
-
-          {!error && reasoning.length > 0 ? (
+          {reasoning.length > 0 ? (
             <p className="mt-2 text-sm text-zinc-700" role="status" aria-live="polite">
               {reasoning}
             </p>
@@ -341,7 +338,8 @@ export default function Skills() {
           <button
             type="button"
             onClick={handleCheckSkills}
-            disabled={isChecking}
+            disabled={isChecking || currentVisibleSkills.length === 0}
+            title={checkSkillsDisabledReason || "Check Skills"}
             className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400"
           >
             {isChecking ? "Checking..." : "Check Skills"}

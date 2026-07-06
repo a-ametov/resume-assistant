@@ -135,12 +135,10 @@ export default function BuildSuggestions({
   onPersist,
 }: BuildSuggestionsProps) {
   const backendClient = BackendClient.getInstance();
-  const { appState, markSavedClean, loadSerializedAppState } = useResumeGlobalState();
+  const { appState, markSavedClean, loadSerializedAppState, addGlobalError } = useResumeGlobalState();
   const [isBuilding, setIsBuilding] = useState(false);
   const [isBuildingResume, setIsBuildingResume] = useState(false);
   const [isFeedbackCollapsed, setIsFeedbackCollapsed] = useState(false);
-  const [buildError, setBuildError] = useState("");
-  const [resumeError, setResumeError] = useState("");
   const [buildResult, setBuildResult] = useState<BuildResult | null>(null);
   const [selectedSummaryOptions, setSelectedSummaryOptions] = useState<
     Record<number, "original" | "suggested">
@@ -172,8 +170,6 @@ export default function BuildSuggestions({
   }, [applicationKey, initialBuildResult, initialSelections]);
 
   const handleBuild = async () => {
-    setBuildError("");
-    setResumeError("");
     setIsBuilding(true);
 
     try {
@@ -190,11 +186,11 @@ export default function BuildSuggestions({
       setSelectedSuggestedSkills(defaultSelections.selectedSuggestedSkills);
       onPersist(result, defaultSelections);
     } catch (caughtError) {
-      setBuildError(
+      const errorMessage =
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to build resume suggestions right now.",
-      );
+          : "Unable to build resume suggestions right now.";
+      addGlobalError(errorMessage);
     } finally {
       setIsBuilding(false);
     }
@@ -256,7 +252,6 @@ export default function BuildSuggestions({
       return;
     }
 
-    setResumeError("");
     setIsBuildingResume(true);
 
     try {
@@ -404,9 +399,9 @@ export default function BuildSuggestions({
         URL.revokeObjectURL(downloadUrl);
       }
     } catch (caughtError) {
-      setResumeError(
-        caughtError instanceof Error ? caughtError.message : "Unable to build resume.",
-      );
+      const errorMessage =
+        caughtError instanceof Error ? caughtError.message : "Unable to build resume.";
+      addGlobalError(errorMessage);
     } finally {
       setIsBuildingResume(false);
     }
@@ -426,12 +421,6 @@ export default function BuildSuggestions({
     <section className="w-full rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
         <p className="text-sm font-medium text-zinc-800">Build Resume Suggestions</p>
-
-        {buildError ? (
-          <p className="mt-2 text-sm text-red-600" role="status" aria-live="polite">
-            {buildError}
-          </p>
-        ) : null}
 
         <button
           type="button"
@@ -612,11 +601,6 @@ export default function BuildSuggestions({
             </div>
 
             <div className="pt-1">
-              {resumeError ? (
-                <p className="mb-2 text-sm text-red-600" role="status" aria-live="polite">
-                  {resumeError}
-                </p>
-              ) : null}
               <button
                 type="button"
                 onClick={handleBuildResume}
