@@ -37,16 +37,12 @@ async function withinLimit(key: string, limit: number): Promise<LimitState> {
     return setResult === 0 ? LimitState.Good : LimitState.Error;
 }
 
-function createLimitStateResponse(state: LimitState): Response | null {
-    if (state === LimitState.Error) {
-        return NextResponse.json({ error: "500: Unable to validate request limit." }, { status: 500 });
-    }
-
+function createLimitStateErrorResponse(state: LimitState): Response {
     if (state === LimitState.Exceeded) {
         return NextResponse.json({ error: "429: Request limit exceeded." }, { status: 429 });
     }
 
-    return null;
+    return NextResponse.json({ error: "500: Unable to validate request limit." }, { status: 500 });
 }
 
 async function createKey(suffix: string): Promise<string | null> {
@@ -187,7 +183,7 @@ export async function handleCheck(request: Request, isSummary: boolean) {
 
         const limitState = await withinLimit(key, CHECK_LIMIT);
         if (limitState !== LimitState.Good) {
-            return createLimitStateResponse(limitState);
+            return createLimitStateErrorResponse(limitState);
         }
 
         const body = (await request.json()) as CheckRequest;
@@ -211,7 +207,7 @@ export async function handleChange(request: Request, isSummary: boolean) {
 
         const limitState = await withinLimit(key, CHECK_LIMIT);
         if (limitState !== LimitState.Good) {
-            return createLimitStateResponse(limitState);
+            return createLimitStateErrorResponse(limitState);
         }
 
         const body = (await request.json()) as ChangeRequest;
@@ -234,7 +230,7 @@ export async function handleSkills(request: Request) {
 
         const limitState = await withinLimit(key, CHECK_LIMIT);
         if (limitState !== LimitState.Good) {
-            return createLimitStateResponse(limitState);
+            return createLimitStateErrorResponse(limitState);
         }
 
         const body = (await request.json()) as SkillsRequest;
@@ -257,7 +253,7 @@ export async function handleBuild(request: Request) {
 
         const limitState = await withinLimit(key, BUILD_LIMIT);
         if (limitState !== LimitState.Good) {
-            return createLimitStateResponse(limitState);
+            return createLimitStateErrorResponse(limitState);
         }
 
         const body = (await request.json()) as BuildRequest;
