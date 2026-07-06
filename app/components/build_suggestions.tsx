@@ -75,6 +75,16 @@ function defaultSuggestedSkillSelections(result: BuildResult): Record<number, bo
   );
 }
 
+function createEditedSummarySuggestions(result: BuildResult): string[] {
+  return result.summarySuggestions.map((entry) => entry.suggestion);
+}
+
+function createEditedExperienceSuggestions(result: BuildResult): Array<string[]> {
+  return result.experienceSuggestions.map((company) =>
+    getExperiencePairs(company).map((pair) => pair.suggested),
+  );
+}
+
 function appendUniqueSkills(existing: string[], suggested: string[]): string[] {
   const seen = new Set(existing.map((skill) => skill.toLowerCase()));
   const merged = [...existing];
@@ -143,14 +153,18 @@ export default function BuildSuggestions({
   const [selectedSummaryOptions, setSelectedSummaryOptions] = useState<
     Record<number, "original" | "suggested">
   >({});
+  const [editedSummarySuggestions, setEditedSummarySuggestions] = useState<string[]>([]);
   const [selectedExperienceOptions, setSelectedExperienceOptions] = useState<
     Record<string, "original" | "suggested">
   >({});
+  const [editedExperienceSuggestions, setEditedExperienceSuggestions] = useState<string[][]>([]);
   const [selectedSuggestedSkills, setSelectedSuggestedSkills] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (!applicationKey || !initialBuildResult) {
       setBuildResult(null);
+      setEditedSummarySuggestions([]);
+      setEditedExperienceSuggestions([]);
       setSelectedSummaryOptions({});
       setSelectedExperienceOptions({});
       setSelectedSuggestedSkills({});
@@ -158,6 +172,8 @@ export default function BuildSuggestions({
     }
 
     setBuildResult(initialBuildResult);
+    setEditedSummarySuggestions(createEditedSummarySuggestions(initialBuildResult));
+    setEditedExperienceSuggestions(createEditedExperienceSuggestions(initialBuildResult));
     setSelectedSummaryOptions(
       initialSelections?.selectedSummaryOptions ?? defaultSummarySelections(initialBuildResult),
     );
@@ -181,6 +197,8 @@ export default function BuildSuggestions({
       };
 
       setBuildResult(result);
+      setEditedSummarySuggestions(createEditedSummarySuggestions(result));
+      setEditedExperienceSuggestions(createEditedExperienceSuggestions(result));
       setSelectedSummaryOptions(defaultSelections.selectedSummaryOptions);
       setSelectedExperienceOptions(defaultSelections.selectedExperienceOptions);
       setSelectedSuggestedSkills(defaultSelections.selectedSuggestedSkills);
@@ -258,7 +276,8 @@ export default function BuildSuggestions({
       const selectedSummary = buildResult.summarySuggestions
         .map((entry, index) => {
           const option = selectedSummaryOptions[index] ?? "original";
-          return option === "suggested" ? entry.suggestion : entry.original;
+          const suggestedValue = editedSummarySuggestions[index] ?? entry.suggestion;
+          return option === "suggested" ? suggestedValue : entry.original;
         })
         .map((entry) => entry.trim())
         .filter((entry) => entry.length > 0);
@@ -308,7 +327,9 @@ export default function BuildSuggestions({
               matchedCompanyIndex >= 0
                 ? (selectedExperienceOptions[`${matchedCompanyIndex}-${entryIndex}`] ?? "original")
                 : "original";
-            return option === "suggested" ? pair.suggested : pair.original;
+            const suggestedValue =
+              editedExperienceSuggestions[matchedCompanyIndex]?.[entryIndex] ?? pair.suggested;
+            return option === "suggested" ? suggestedValue : pair.original;
           })
           .map((entry) => entry.trim())
           .filter((entry) => entry.length > 0);
@@ -490,7 +511,14 @@ export default function BuildSuggestions({
                           }))
                         }
                         originalText={entry.original}
-                        suggestionText={entry.suggestion}
+                        suggestionText={editedSummarySuggestions[index] ?? entry.suggestion}
+                        onSuggestionTextChange={(value) =>
+                          setEditedSummarySuggestions((previous) => {
+                            const next = [...previous];
+                            next[index] = value;
+                            return next;
+                          })
+                        }
                       />
                     </div>
                   ))}
@@ -584,7 +612,24 @@ export default function BuildSuggestions({
                                   }))
                                 }
                                 originalText={pair.original || "No original entry"}
-                                suggestionText={pair.suggested || "No suggested entry"}
+                                suggestionText={
+                                  editedExperienceSuggestions[companyIndex]?.[entryIndex] ??
+                                  (pair.suggested || "No suggested entry")
+                                }
+                                onSuggestionTextChange={(value) =>
+                                  setEditedExperienceSuggestions((previous) => {
+                                    const next = previous.map((companyItems, companyItemIndex) =>
+                                      companyItemIndex === companyIndex ? [...companyItems] : companyItems,
+                                    );
+
+                                    if (!next[companyIndex]) {
+                                      next[companyIndex] = [];
+                                    }
+
+                                    next[companyIndex][entryIndex] = value;
+                                    return next;
+                                  })
+                                }
                               />
                             </div>
                           ))}

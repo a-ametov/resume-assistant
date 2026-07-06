@@ -6,14 +6,17 @@ type BuilderFieldProps = {
   onSelectOption: (option: "original" | "suggested") => void;
   originalText: string;
   suggestionText: string;
+  onSuggestionTextChange: (value: string) => void;
 };
 
-type AutoReadOnlyTextareaProps = {
+type AutoTextareaProps = {
   value: string;
   className: string;
+  onChange?: (value: string) => void;
+  readOnly?: boolean;
 };
 
-function AutoReadOnlyTextarea({ value, className }: AutoReadOnlyTextareaProps) {
+function AutoTextarea({ value, className, onChange, readOnly = false }: AutoTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -61,9 +64,10 @@ function AutoReadOnlyTextarea({ value, className }: AutoReadOnlyTextareaProps) {
   return (
     <textarea
       ref={textareaRef}
-      readOnly
       value={value}
       rows={1}
+      readOnly={readOnly}
+      onChange={onChange ? (event) => onChange(event.target.value) : undefined}
       className={className}
     />
   );
@@ -75,6 +79,7 @@ export default function BuilderField({
   onSelectOption,
   originalText,
   suggestionText,
+  onSuggestionTextChange,
 }: BuilderFieldProps) {
   const originalId = `${name}-original`;
   const suggestedId = `${name}-suggested`;
@@ -100,8 +105,9 @@ export default function BuilderField({
         >
           ✓
         </span>
-        <AutoReadOnlyTextarea
+        <AutoTextarea
           value={originalText}
+          readOnly
           className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none ${
             selectedOption === "original"
               ? "border-green-500 bg-green-50 text-zinc-900"
@@ -129,14 +135,35 @@ export default function BuilderField({
         >
           ✓
         </span>
-        <AutoReadOnlyTextarea
-          value={suggestionText}
-          className={`h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none ${
-            selectedOption === "suggested"
-              ? "border-green-500 bg-green-50 text-zinc-900"
-              : "border-zinc-300 bg-zinc-50 text-zinc-900"
-          } resize-none overflow-hidden py-2`}
-        />
+        <div className="relative min-w-0 flex-1">
+          <AutoTextarea
+            value={suggestionText}
+            onChange={onSuggestionTextChange}
+            className={`h-10 w-full rounded-md border px-3 pr-10 text-sm outline-none ${
+              selectedOption === "suggested"
+                ? "border-green-500 bg-green-50 text-zinc-900"
+                : "border-zinc-300 bg-white text-zinc-900"
+            } resize-none overflow-hidden py-2`}
+          />
+          <span
+            className="pointer-events-none absolute bottom-2 right-2 inline-flex h-4 w-4 items-center justify-center text-zinc-400"
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </span>
+        </div>
       </label>
     </div>
   );
