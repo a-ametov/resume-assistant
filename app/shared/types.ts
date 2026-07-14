@@ -112,8 +112,8 @@ export type ExportCompanyEntry = {
 export type ExportEducationEntry = {
   name: string;
   title: string;
-  from: number;
-  to: number;
+  from?: number;
+  to?: number;
 };
 
 export type ExportRequest = {

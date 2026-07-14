@@ -131,6 +131,24 @@ function buildDefaultExportFileName(fullName: string, company: string, fallbackF
   return fileParts.length > 0 ? `${fileParts.join("-")}.pdf` : normalizedFallback;
 }
 
+function buildEducationExportEntries(
+  omitEducationDates: boolean,
+  educationEntries: ReturnType<typeof useResumeGlobalState>["appState"]["educationEntries"],
+): ExportRequest["education"] {
+  return educationEntries
+    .filter((education) => !education.hidden)
+    .map((education) => ({
+      name: education.name,
+      title: education.title,
+      ...(omitEducationDates
+        ? {}
+        : {
+            from: parseYear(education.fromDate),
+            to: parseYear(education.toDate),
+          }),
+    }));
+}
+
 type BuildSuggestionsProps = {
   applicationKey: string;
   initialBuildResult: BuildResult | null;
@@ -159,6 +177,8 @@ export default function BuildSuggestions({
   >({});
   const [editedExperienceSuggestions, setEditedExperienceSuggestions] = useState<string[][]>([]);
   const [selectedSuggestedSkills, setSelectedSuggestedSkills] = useState<Record<number, boolean>>({});
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [omitEducationDates, setOmitEducationDates] = useState(false);
 
   const handleSummarySuggestionTextChange = (index: number, value: string) => {
     if (!buildResult) {
@@ -273,7 +293,9 @@ export default function BuildSuggestions({
     }
   };
 
-  const persistSelectedSkillsToAppState = async (selectedSkills: string[]) => {
+  const persistSelectedSkillsToAppState = async (
+    selectedSkills: string[],
+  ) => {
     const existingSkillSet = new Set(
       appState.skillsEntries
         .filter((entry) => !entry.hidden)
@@ -415,14 +437,7 @@ export default function BuildSuggestions({
         summary: selectedSummary,
         skills: mergedSkills,
         companyEntries: selectedCompanyEntries,
-        education: appState.educationEntries
-          .filter((education) => !education.hidden)
-          .map((education) => ({
-            name: education.name,
-            title: education.title,
-            from: parseYear(education.fromDate),
-            to: parseYear(education.toDate),
-          })),
+        education: buildEducationExportEntries(omitEducationDates, appState.educationEntries),
       };
 
       onPersist(buildResult, {
@@ -696,6 +711,31 @@ export default function BuildSuggestions({
               >
                 {isBuildingResume ? "Building Resume..." : "Build Resume"}
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAdvancedOptions((previous) => !previous)}
+                className="mt-2 inline-flex h-9 w-full items-center justify-center rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                aria-expanded={showAdvancedOptions}
+              >
+                {showAdvancedOptions ? "Hide Advanced Options" : "Show Advanced Options"}
+              </button>
+
+              {showAdvancedOptions ? (
+                <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                    <input
+                      type="checkbox"
+                      name="omit-education-dates"
+                      checked={omitEducationDates}
+                      onChange={(event) => setOmitEducationDates(event.target.checked)}
+                      className="h-4 w-4"
+                      aria-label="omit education dates"
+                    />
+                    <span>Omit education dates</span>
+                  </label>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
