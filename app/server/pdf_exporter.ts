@@ -184,8 +184,10 @@ function buildResumeLines(request: ExportRequest): string[] {
       const rawName = education.name.trim();
       const key = rawName.length > 0 ? rawName.toLowerCase() : `__education_blank_${educationIndex}`;
       const title = education.title.trim();
-      const from = Number.isFinite(education.from) ? education.from : 0;
-      const to = Number.isFinite(education.to) ? education.to : 0;
+      const from =
+        typeof education.from === "number" && Number.isFinite(education.from) ? education.from : 0;
+      const to =
+        typeof education.to === "number" && Number.isFinite(education.to) ? education.to : 0;
 
       const existing = dedupedEducation.get(key);
       if (!existing) {
