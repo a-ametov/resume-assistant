@@ -18,23 +18,29 @@ const enum LimitState {
 
 // Module-private helper: allows increment only while the counter is below limit.
 async function withinLimit(key: string, limit: number): Promise<LimitState> {
-    // this is a hack
-    if (key.includes(':ametov.anton@gmail.com:')) {
-        return LimitState.Good;
-    }
-
+    let state = LimitState.Good;
     const currentValue = await RedisClient.get(key);
 
     if (currentValue < 0) {
-        return LimitState.Error;
+        state = LimitState.Error;
     }
 
     if (currentValue >= limit) {
-        return LimitState.Exceeded;
+        state = LimitState.Exceeded;
     }
 
-    const setResult = await RedisClient.set(key, currentValue + 1);
-    return setResult === 0 ? LimitState.Good : LimitState.Error;
+    // this is a hack but we have to keep pinging Redis so that they don't
+    // shut down the database.
+    if (key.includes(':ametov.anton@gmail.com:')) {
+        state = LimitState.Good;
+    }
+
+    if (state == LimitState.Good) {
+        const setResult = await RedisClient.set(key, currentValue + 1);
+        return setResult === 0 ? LimitState.Good : LimitState.Error;
+    }
+
+    return state;
 }
 
 function createLimitStateErrorResponse(state: LimitState): Response {
