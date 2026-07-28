@@ -116,12 +116,17 @@ export type ExportEducationEntry = {
   to?: number;
 };
 
+export type ExportOptions = {
+  omitAllCapsSectionTitles?: boolean;
+};
+
 export type ExportRequest = {
   profile: ExportProfile;
   summary: string[];
   skills: string[];
   companyEntries: ExportCompanyEntry[];
   education: ExportEducationEntry[];
+  options?: ExportOptions;
 };
 
 export type ExportPdfResult = {

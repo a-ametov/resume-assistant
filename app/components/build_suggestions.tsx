@@ -179,6 +179,7 @@ export default function BuildSuggestions({
   const [selectedSuggestedSkills, setSelectedSuggestedSkills] = useState<Record<number, boolean>>({});
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [omitEducationDates, setOmitEducationDates] = useState(false);
+  const [omitAllCapsSectionTitles, setOmitAllCapsSectionTitles] = useState(false);
 
   const handleSummarySuggestionTextChange = (index: number, value: string) => {
     if (!buildResult) {
@@ -438,6 +439,9 @@ export default function BuildSuggestions({
         skills: mergedSkills,
         companyEntries: selectedCompanyEntries,
         education: buildEducationExportEntries(omitEducationDates, appState.educationEntries),
+        options: {
+          omitAllCapsSectionTitles,
+        },
       };
 
       onPersist(buildResult, {
@@ -723,17 +727,31 @@ export default function BuildSuggestions({
 
               {showAdvancedOptions ? (
                 <div className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
-                  <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
-                    <input
-                      type="checkbox"
-                      name="omit-education-dates"
-                      checked={omitEducationDates}
-                      onChange={(event) => setOmitEducationDates(event.target.checked)}
-                      className="h-4 w-4"
-                      aria-label="omit education dates"
-                    />
-                    <span>Omit education dates</span>
-                  </label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex w-full cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                      <input
+                        type="checkbox"
+                        name="omit-education-dates"
+                        checked={omitEducationDates}
+                        onChange={(event) => setOmitEducationDates(event.target.checked)}
+                        className="h-4 w-4"
+                        aria-label="omit education dates"
+                      />
+                      <span>Omit education dates</span>
+                    </label>
+
+                    <label className="flex w-full cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                      <input
+                        type="checkbox"
+                        name="omit-all-caps-section-titles"
+                        checked={omitAllCapsSectionTitles}
+                        onChange={(event) => setOmitAllCapsSectionTitles(event.target.checked)}
+                        className="h-4 w-4"
+                        aria-label="omit all caps section titles"
+                      />
+                      <span>Omit all caps section titles</span>
+                    </label>
+                  </div>
                 </div>
               ) : null}
             </div>

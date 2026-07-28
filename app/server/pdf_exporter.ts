@@ -92,6 +92,16 @@ function wrapText(text: string, maxWidth: number, size: number, measure: (text: 
   return lines.length > 0 ? lines : [""];
 }
 
+function toTitleCaseWords(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
 function buildResumeLines(request: ExportRequest): string[] {
   const lines: string[] = [];
   const profile = request.profile;
@@ -258,6 +268,7 @@ export async function exportResumeToPdfBytes(request: ExportRequest): Promise<Ui
   let cursorY = PAGE_HEIGHT - MARGIN_TOP;
   const maxWidth = PAGE_WIDTH - MARGIN_X * 2;
   const experienceIndent = bodyFont.widthOfTextAtSize("    ", BODY_SIZE);
+  const omitAllCapsSectionTitles = request.options?.omitAllCapsSectionTitles ?? false;
 
   const ensureSpace = (requiredHeight: number) => {
     if (cursorY < MARGIN_BOTTOM + requiredHeight) {
@@ -267,7 +278,9 @@ export async function exportResumeToPdfBytes(request: ExportRequest): Promise<Ui
   };
 
   const drawSectionHeading = (text: string) => {
-    const heading = text.trim().toUpperCase();
+    const heading = omitAllCapsSectionTitles
+      ? toTitleCaseWords(text)
+      : text.trim().toUpperCase();
     if (!heading) {
       return;
     }

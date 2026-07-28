@@ -164,6 +164,9 @@ export default class BackendClient {
           from: parseYear(education.fromDate),
           to: parseYear(education.toDate),
         })),
+      options: {
+        omitAllCapsSectionTitles: false,
+      },
     };
   }
 
