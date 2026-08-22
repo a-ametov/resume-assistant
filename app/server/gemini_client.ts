@@ -18,7 +18,7 @@ export default class GeminiClient {
 
   private constructor() {
     this.apiKey = process.env.GEMINI_API_KEY ?? "";
-    this.model = "gemini-flash-latest";
+    this.model = "gemini-3.6-flash";
   }
 
   public static getInstance(): GeminiClient {
